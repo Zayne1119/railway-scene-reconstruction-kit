@@ -1,0 +1,76 @@
+{
+  "schema_version": "railway.reviewed-scene-layout.v1",
+  "origin_xyz": [0.0, 0.0, 0.0],
+  "assets": [
+    {
+      "id": "PLATFORM-0001",
+      "type": "platform",
+      "subtype": "segment",
+      "status": "reviewed",
+      "chainage_m": 10.0,
+      "evidence_level": "observed",
+      "confidence": 0.92,
+      "sources": [{"kind": "point_cloud", "reference": "segment:synthetic"}],
+      "geometry": {
+        "kind": "extruded_polygon_xy",
+        "points": [[0.0, 3.0], [30.0, 3.0], [30.0, 8.0], [0.0, 8.0]],
+        "bottom_z": 0.0,
+        "top_z": 1.1
+      },
+      "limitations": []
+    },
+    {
+      "id": "CANOPY-COLUMN-0001",
+      "type": "canopy_column",
+      "subtype": "rectangular",
+      "status": "reviewed",
+      "chainage_m": 8.0,
+      "evidence_level": "observed",
+      "confidence": 0.88,
+      "sources": [{"kind": "point_cloud", "reference": "segment:synthetic"}],
+      "geometry": {"kind": "box", "center": [8.0, 5.5, 3.1], "size": [0.45, 0.45, 4.0]},
+      "limitations": []
+    },
+    {
+      "id": "CANOPY-BEAM-0001",
+      "type": "canopy_beam",
+      "subtype": "cross_beam",
+      "status": "reviewed",
+      "chainage_m": 8.0,
+      "evidence_level": "photo_interpreted",
+      "confidence": 0.78,
+      "sources": [{"kind": "panorama", "reference": "review:synthetic"}],
+      "geometry": {"kind": "beam", "start": [8.0, 3.5, 5.0], "end": [8.0, 7.5, 5.0], "width": 0.25, "height": 0.35},
+      "limitations": ["Section dimension is interpreted from imagery"]
+    },
+    {
+      "id": "CANOPY-ROOF-0001",
+      "type": "canopy_roof",
+      "subtype": "roof_segment",
+      "status": "reviewed",
+      "chainage_m": 15.0,
+      "evidence_level": "photo_interpreted",
+      "confidence": 0.80,
+      "sources": [{"kind": "panorama", "reference": "review:synthetic"}],
+      "geometry": {"kind": "panel", "points": [[0.0, 3.2, 5.15], [30.0, 3.2, 5.15], [30.0, 7.8, 5.35], [0.0, 7.8, 5.35]], "thickness": 0.12},
+      "limitations": ["Roof is one reviewed segment, not a corridor-wide plane"]
+    },
+    {
+      "id": "CONTACT-WIRE-0001",
+      "type": "contact_wire",
+      "subtype": "display_tube",
+      "status": "reviewed",
+      "chainage_m": 15.0,
+      "evidence_level": "rule_inferred",
+      "confidence": 0.55,
+      "sources": [{"kind": "rule", "reference": "synthetic catenary continuity"}],
+      "geometry": {"kind": "tube", "points": [[0.0, 0.0, 5.5], [15.0, 0.0, 5.45], [30.0, 0.0, 5.5]], "radius": 0.025, "sides": 8},
+      "limitations": ["Illustrative inferred span"]
+    }
+  ],
+  "relations": [
+    {"id": "REL-COLUMN-BEAM-0001", "type": "supports", "from": "CANOPY-COLUMN-0001", "to": "CANOPY-BEAM-0001"},
+    {"id": "REL-BEAM-ROOF-0001", "type": "supports", "from": "CANOPY-BEAM-0001", "to": "CANOPY-ROOF-0001"}
+  ]
+}
+

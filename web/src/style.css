@@ -1,0 +1,21 @@
+:root { color-scheme: dark; font-family: Inter, "Microsoft YaHei", system-ui, sans-serif; background: #06131b; color: #eaf7fb; }
+* { box-sizing: border-box; }
+html, body, #app { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+header { height: 84px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; border-bottom: 1px solid #1d4756; background: #071c27; }
+h1 { margin: 5px 0 0; font-size: 21px; font-weight: 550; }
+.eyebrow { color: #b9ff48; font: 700 10px/1 monospace; letter-spacing: .18em; }
+.status { color: #b9ff48; font: 12px monospace; }
+main { position: relative; height: calc(100% - 84px); }
+#viewport { width: 100%; height: 100%; display: block; background: radial-gradient(circle at 50% 45%, #123143, #06131b 68%); }
+aside { position: absolute; top: 18px; right: 18px; width: min(320px, calc(100vw - 36px)); max-height: calc(100% - 36px); overflow: auto; padding: 16px; border: 1px solid #2a5b68; background: rgba(5, 23, 32, .92); backdrop-filter: blur(12px); }
+label { display: grid; gap: 7px; font-size: 11px; color: #8fb1bd; }
+input, select, button { width: 100%; margin: 6px 0; padding: 10px; border: 1px solid #315d68; background: #0a222d; color: #eaf7fb; }
+button { cursor: pointer; color: #b9ff48; }
+#details { margin-top: 12px; padding-top: 10px; border-top: 1px solid #254651; font-size: 12px; line-height: 1.65; }
+#details h2 { font-size: 13px; color: #b9ff48; }
+#details dl { display: grid; grid-template-columns: 92px 1fr; gap: 5px 8px; overflow-wrap: anywhere; }
+#details dt { color: #789aa6; }
+#details dd { margin: 0; }
+.message { position: absolute; left: 24px; bottom: 24px; max-width: 560px; padding: 14px 18px; border-left: 3px solid #ff9e42; background: rgba(12, 29, 38, .95); font-size: 13px; line-height: 1.55; }
+@media (max-width: 700px) { header { padding: 0 14px; } aside { top: auto; bottom: 12px; max-height: 44%; } h1 { font-size: 16px; } }
+

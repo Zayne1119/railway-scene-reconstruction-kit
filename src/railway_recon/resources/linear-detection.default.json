@@ -1,0 +1,23 @@
+{
+  "vertical": {
+    "xy_bin_m": 0.15,
+    "minimum_z_span_m": 4.0,
+    "minimum_cell_points": 12,
+    "maximum_footprint_m": 1.5,
+    "minimum_component_points": 30
+  },
+  "cable": {
+    "minimum_cross_m": -30.0,
+    "maximum_cross_m": 30.0,
+    "z_percentile_min": 70.0,
+    "z_percentile_max": 99.9,
+    "cross_bin_m": 0.10,
+    "z_bin_m": 0.10,
+    "longitudinal_bin_m": 0.50,
+    "minimum_coverage": 0.14,
+    "maximum_cross_section_span_m": 0.8,
+    "candidate_half_width_m": 0.15,
+    "candidate_half_height_m": 0.20
+  }
+}
+

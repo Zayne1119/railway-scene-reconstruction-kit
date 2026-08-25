@@ -1,0 +1,56 @@
+{
+  "schema_version": "railway.toolkit.project.v1",
+  "project": {
+    "id": "example-project",
+    "name": "Example Railway Project",
+    "confidentiality": "internal",
+    "units": "metre",
+    "axis": "Z-up",
+    "crs": {
+      "epsg": null,
+      "vertical_datum": null,
+      "control_points": null
+    }
+  },
+  "inputs": {
+    "point_cloud": "input/pointcloud/site.laz",
+    "camera_csv": "input/cameras.csv",
+    "panorama_root": "input/panoramas"
+  },
+  "workspace": {
+    "manifests": "workspace/manifests",
+    "segment_manifest": "workspace/manifests/segments.generated.json",
+    "segments": "workspace/segments",
+    "derived": "workspace/derived",
+    "asset_registry": "workspace/registry/asset_registry.json",
+    "reports": "workspace/reports",
+    "exports": "workspace/exports"
+  },
+  "segmentation": {
+    "length_m": 50.0,
+    "corridor_half_width_m": 30.0,
+    "z_below_camera_m": 15.0,
+    "z_above_camera_m": 35.0,
+    "chunk_size_points": 2000000
+  },
+  "reconstruction": {
+    "pilot_length_m": 50.0,
+    "track_gauge_m": 1.435,
+    "unseen_facade_policy": "low_confidence_block",
+    "manual_review_required": true
+  },
+  "quality": {
+    "rail_fit_p90_max_m": 0.06,
+    "platform_fit_p90_max_m": 0.08,
+    "canopy_fit_p90_max_m": 0.10,
+    "allow_duplicate_asset_ids": false,
+    "allow_degenerate_faces": false
+  },
+  "algorithms": {
+    "rail_detection": "rail_detection.json",
+    "linear_detection": "linear_detection.json",
+    "track_build": "track_build.json",
+    "projection_calibration": "projection_calibration.json"
+  },
+  "rules": "rules.json"
+}

@@ -1,0 +1,18 @@
+{
+  "z_mode": "percentile",
+  "z_percentile_min": 1.0,
+  "z_percentile_max": 35.0,
+  "z_min_offset_m": 0.0,
+  "z_max_offset_m": 0.0,
+  "cross_bin_m": 0.05,
+  "longitudinal_bin_m": 0.25,
+  "median_filter_bins": 3,
+  "gaussian_sigma_bins": 1.0,
+  "minimum_line_coverage": 0.12,
+  "minimum_peak_prominence": 0.02,
+  "minimum_peak_spacing_m": 0.35,
+  "rail_pair_minimum_m": 1.25,
+  "rail_pair_maximum_m": 1.60,
+  "candidate_half_width_m": 0.10
+}
+

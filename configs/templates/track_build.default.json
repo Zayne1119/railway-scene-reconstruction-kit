@@ -1,0 +1,20 @@
+{
+  "gauge_m": 1.435,
+  "constrain_nominal_gauge": true,
+  "polyline_step_m": 0.5,
+  "default_observed_confidence": 0.85,
+  "default_inferred_confidence": 0.55,
+  "sleeper": {
+    "spacing_m": 0.60,
+    "length_m": 2.60,
+    "width_m": 0.25,
+    "height_m": 0.16,
+    "top_below_rail_m": 0.145
+  },
+  "track_bed": {
+    "top_width_m": 2.90,
+    "bottom_width_m": 3.50,
+    "top_below_rail_m": 0.25,
+    "depth_m": 0.45
+  }
+}

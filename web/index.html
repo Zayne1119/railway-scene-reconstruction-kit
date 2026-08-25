@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Railway Reconstruction Viewer</title>
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <div><span class="eyebrow">EVIDENCE-AWARE MODEL</span><h1 id="title">铁路场景重建验收</h1></div>
+        <div id="status" class="status">初始化</div>
+      </header>
+      <main>
+        <canvas id="viewport"></canvas>
+        <aside>
+          <label>资产搜索<input id="search" placeholder="ID / 类型" /></label>
+          <select id="evidence">
+            <option value="">全部证据等级</option>
+            <option value="observed">点云观测</option>
+            <option value="photo_interpreted">照片解释</option>
+            <option value="rule_inferred">规则推断</option>
+            <option value="unsupported">证据不足</option>
+          </select>
+          <button id="reset">回到全景</button>
+          <section id="details"><h2>资产信息</h2><p>点击模型构件查看证据、置信度和限制。</p></section>
+        </aside>
+        <div id="message" class="message" hidden></div>
+      </main>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
+

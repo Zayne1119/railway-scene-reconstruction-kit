@@ -1,0 +1,15 @@
+name: railway-recon
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy>=1.26
+  - scipy>=1.12
+  - pillow>=10
+  - jsonschema>=4.21
+  - pip
+  - pip:
+      - laspy[lazrs]>=2.5,<3
+      - pytest>=8,<9
+      - ruff>=0.6,<1
+

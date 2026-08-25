@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/railway-asset-registry-v1.json",
+  "type": "object",
+  "required": ["schema_version", "project_id", "assets", "relations", "summary"],
+  "properties": {
+    "schema_version": {"const": "railway.asset-registry.v1"},
+    "project_id": {"type": "string", "minLength": 3},
+    "updated_at": {"type": "string"},
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "status", "evidence_level", "confidence", "sources"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[A-Z][A-Z0-9_-]{2,79}$"},
+          "type": {"type": "string", "minLength": 1},
+          "subtype": {"type": ["string", "null"]},
+          "status": {"enum": ["candidate", "reviewed", "accepted", "rejected", "superseded"]},
+          "chainage_m": {"type": ["number", "null"]},
+          "evidence_level": {"enum": ["observed", "photo_interpreted", "rule_inferred", "unsupported"]},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["kind", "reference"],
+              "properties": {
+                "kind": {"enum": ["point_cloud", "panorama", "survey", "rule", "manual_review", "asset_ledger"]},
+                "reference": {"type": "string"},
+                "note": {"type": "string"}
+              },
+              "additionalProperties": true
+            }
+          },
+          "parameters": {"type": "object"},
+          "geometry": {"type": "object"},
+          "limitations": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": true
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "from", "to"],
+        "properties": {
+          "id": {"type": "string"},
+          "type": {"type": "string"},
+          "from": {"type": "string"},
+          "to": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "summary": {"type": "object"}
+  },
+  "additionalProperties": true
+}

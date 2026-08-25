@@ -1,0 +1,11 @@
+{
+  "minimum_distance_m": 2.0,
+  "maximum_distance_m": 55.0,
+  "sample_count": 60000,
+  "random_seed": 20260825,
+  "rotation_degrees": false,
+  "euler_orders": ["xyz", "xzy", "yxz", "yzx", "zxy", "zyx"],
+  "pose_directions": ["camera_to_world", "world_to_camera"],
+  "top_result_count": 20
+}
+

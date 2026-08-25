@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "railway-scene-reconstruction-kit"
+version = "0.1.0"
+description = "Reusable evidence-aware railway scene reconstruction workflow"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+  "laspy[lazrs]>=2.5,<3",
+  "numpy>=1.26,<3",
+  "scipy>=1.12,<2",
+  "Pillow>=10,<12",
+  "jsonschema>=4.21,<5",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8,<9",
+  "ruff>=0.6,<1",
+]
+
+[project.scripts]
+railway-recon = "railway_recon.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+railway_recon = ["resources/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+

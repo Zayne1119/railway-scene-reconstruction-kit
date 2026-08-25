@@ -1,0 +1,45 @@
+{
+  "schema_version": "railway.asset-registry.v1",
+  "project_id": "synthetic-station",
+  "updated_at": "2026-01-01T00:00:00+00:00",
+  "assets": [
+    {
+      "id": "TRACK-0001",
+      "type": "track",
+      "subtype": "standard_gauge",
+      "status": "accepted",
+      "chainage_m": 10.0,
+      "evidence_level": "observed",
+      "confidence": 0.96,
+      "sources": [
+        {"kind": "point_cloud", "reference": "segment:s0000_0050m"},
+        {"kind": "manual_review", "reference": "review:pilot-001"}
+      ],
+      "parameters": {"gauge_m": 1.435},
+      "geometry": {"node": "TRACK-0001"},
+      "limitations": []
+    },
+    {
+      "id": "FACADE-REAR-0001",
+      "type": "building_facade",
+      "subtype": "unseen_rear_block",
+      "status": "accepted",
+      "chainage_m": 15.0,
+      "evidence_level": "rule_inferred",
+      "confidence": 0.25,
+      "sources": [
+        {"kind": "rule", "reference": "facade.unseen_side_policy"}
+      ],
+      "parameters": {},
+      "geometry": {"node": "FACADE-REAR-0001"},
+      "limitations": ["No direct point-cloud or panorama observation"]
+    }
+  ],
+  "relations": [],
+  "summary": {
+    "asset_count": 2,
+    "by_type": {"building_facade": 1, "track": 1},
+    "by_evidence_level": {"observed": 1, "rule_inferred": 1}
+  }
+}
+

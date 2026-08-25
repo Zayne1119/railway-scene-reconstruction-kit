@@ -1,0 +1,4 @@
+id,type,subtype,status,chainage_m,evidence_level,confidence,source_kind,source_reference,source_note,geometry_node,limitations
+MAST-0001,catenary_mast,H-section,reviewed,12.5,photo_interpreted,0.82,panorama,review:synthetic-001,Synthetic example only,MAST-0001,Section dimensions require point-cloud fitting
+CANOPY-COLUMN-0001,canopy_column,rectangular,reviewed,18.0,observed,0.91,point_cloud,segment:synthetic,Geometry supported by synthetic points,CANOPY-COLUMN-0001,
+

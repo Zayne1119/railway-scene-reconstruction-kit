@@ -1,0 +1,5 @@
+index,timestamp,file,x,y,z,rot_x,rot_y,rot_z
+0,0.0,camera/0000_pano.jpg,0.0,0.0,2.5,0.0,0.0,0.0
+1,1.0,camera/0001_pano.jpg,10.0,0.0,2.5,0.0,0.0,0.0
+2,2.0,camera/0002_pano.jpg,20.0,0.0,2.5,0.0,0.0,0.0
+

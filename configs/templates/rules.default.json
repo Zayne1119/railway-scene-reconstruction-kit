@@ -1,0 +1,28 @@
+{
+  "schema_version": "railway.constraint-rules.v1",
+  "track": {
+    "nominal_gauge_m": 1.435,
+    "gauge_warning_tolerance_m": 0.02,
+    "rail_top_continuity_warning_m": 0.03,
+    "sleeper_spacing_default_m": 0.60
+  },
+  "vertical_assets": {
+    "maximum_tilt_degrees_warning": 2.0,
+    "minimum_observed_height_m": 1.0
+  },
+  "catenary": {
+    "require_continuous_contact_wire": true,
+    "allow_inferred_span": true,
+    "inferred_span_evidence_level": "rule_inferred"
+  },
+  "facade": {
+    "unseen_side_policy": "low_confidence_block",
+    "unseen_side_max_confidence": 0.35
+  },
+  "manual_review": {
+    "required_for_photo_interpreted": true,
+    "required_for_rule_inferred": true,
+    "required_for_unknown_professional_class": true
+  }
+}
+

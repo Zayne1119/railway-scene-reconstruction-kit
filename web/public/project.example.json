@@ -1,0 +1,7 @@
+{
+  "title": "Synthetic Railway Reconstruction",
+  "model_url": "/models/scene.glb",
+  "registry_url": "/data/asset_registry.json",
+  "notes": "Copy this file to project.json only in a local or approved deployment."
+}
+

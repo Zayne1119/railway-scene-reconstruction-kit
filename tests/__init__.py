@@ -1,0 +1,2 @@
+"""Offline-compatible test suite."""
+

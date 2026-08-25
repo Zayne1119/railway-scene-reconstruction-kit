@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/railway-project-v1.json",
+  "type": "object",
+  "required": ["schema_version", "project", "inputs", "workspace", "segmentation", "reconstruction", "quality", "algorithms", "rules"],
+  "properties": {
+    "schema_version": {"const": "railway.toolkit.project.v1"},
+    "project": {
+      "type": "object",
+      "required": ["id", "name", "units", "axis", "crs"],
+      "properties": {
+        "id": {"type": "string", "minLength": 3, "maxLength": 64},
+        "name": {"type": "string", "minLength": 1},
+        "confidentiality": {"enum": ["internal", "restricted", "public_synthetic"]},
+        "units": {"const": "metre"},
+        "axis": {"const": "Z-up"},
+        "crs": {
+          "type": "object",
+          "required": ["epsg", "vertical_datum"],
+          "properties": {
+            "epsg": {"type": ["integer", "null"]},
+            "vertical_datum": {"type": ["string", "null"]},
+            "control_points": {"type": ["string", "null"]}
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "inputs": {
+      "type": "object",
+      "required": ["point_cloud", "camera_csv"],
+      "properties": {
+        "point_cloud": {"type": "string"},
+        "camera_csv": {"type": "string"},
+        "panorama_root": {"type": ["string", "null"]}
+      },
+      "additionalProperties": true
+    },
+    "workspace": {
+      "type": "object",
+      "required": ["manifests", "segment_manifest", "segments", "derived", "asset_registry", "reports", "exports"],
+      "additionalProperties": {"type": "string"}
+    },
+    "segmentation": {
+      "type": "object",
+      "required": ["length_m", "corridor_half_width_m", "z_below_camera_m", "z_above_camera_m", "chunk_size_points"],
+      "properties": {
+        "length_m": {"type": "number", "exclusiveMinimum": 0},
+        "corridor_half_width_m": {"type": "number", "exclusiveMinimum": 0},
+        "z_below_camera_m": {"type": "number", "minimum": 0},
+        "z_above_camera_m": {"type": "number", "minimum": 0},
+        "chunk_size_points": {"type": "integer", "minimum": 1000}
+      },
+      "additionalProperties": false
+    },
+    "reconstruction": {"type": "object"},
+    "quality": {"type": "object"},
+    "algorithms": {
+      "type": "object",
+      "required": ["rail_detection", "linear_detection", "track_build", "projection_calibration"],
+      "properties": {
+        "rail_detection": {"type": "string"},
+        "linear_detection": {"type": "string"},
+        "track_build": {"type": "string"},
+        "projection_calibration": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "rules": {"type": "string"}
+  },
+  "additionalProperties": false
+}
