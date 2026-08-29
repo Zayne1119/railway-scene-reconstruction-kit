@@ -8,7 +8,7 @@
 > *An evidence-aware pipeline for traceable railway scene reconstruction.*
 
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
-![Status](https://img.shields.io/badge/status-internal%20v0.1-9ACD32)
+![Status](https://img.shields.io/badge/status-toolkit%20v0.2-9ACD32)
 ![Viewer](https://img.shields.io/badge/Web-Three.js-111111?logo=threedotjs)
 ![Interchange](https://img.shields.io/badge/GLB%20%7C%20FBX%20%7C%20OBJ-ready-8A5CF5)
 
@@ -29,6 +29,17 @@
 
 最终交付的不只是 Mesh，而是“模型 + 资产 ID + 证据 + 置信度 + QA 结果”。
 
+## Paper Benchmark
+
+论文实验与生产交付 QA 已分离。仓库提供冻结数据与空间切分、独立真值、受控消融、失败案例、人工复核计时和 Run Manifest v2 的模板与校验命令。
+
+```powershell
+railway-recon benchmark-init benchmarks/local/site-a --dataset-id railway-site-a --scene-id station-000-200m
+railway-recon benchmark-freeze --root benchmarks/local/site-a
+```
+
+详见 [论文 Benchmark v1 操作手册](docs/PAPER_BENCHMARK_CN.md)。真实 Benchmark 默认保存在已忽略的 `benchmarks/local/`，不得把客户数据或精确坐标提交到公开仓库。
+
 ## Pipeline
 
 ```mermaid
@@ -41,7 +52,8 @@ flowchart LR
     B --> G[2D–3D 投影与照片证据]
     F --> H[语义分类与人工复核]
     G --> H
-    H --> I[参数化 / 规则化重建]
+    H --> T[全局 TrackGraph / 拓扑门禁]
+    T --> I[参数化 / 规则化重建]
     I --> J[点—模型拟合与缺口闭环]
     J --> K[资产注册与 Mesh QA]
     K --> L[GLB / FBX / OBJ]
@@ -72,6 +84,9 @@ flowchart LR
 - LAS/LAZ、相机 CSV、全景目录输入审计；
 - 相机轨迹分段、局部坐标建立和 LAZ 裁切；
 - 钢轨、竖直杆件和线性构件 Pilot 候选；
+- 轨道配对与轨顶高度解耦、无标注嵌套空间留出选参与开发审计；
+- 基于相机里程的全局 TrackGraph、稳定轨道 ID 和断轨/错轨/重复硬门禁；
+- 只消费通过 TrackGraph 的连续钢轨、全局相位轨枕组和道床 OBJ 生成；
 - 参数化轨道 OBJ 与证据复核场景生成；
 - 点云—全景姿态假设搜索与投影叠加；
 - 资产注册表、人工复核导入、运行清单和基础 QA；
@@ -138,13 +153,15 @@ README 内最稳妥的方式是内嵌一个 6–10 秒、低体积的 GIF/动态
 - [输入与输出数据合同](docs/DATA_CONTRACT_CN.md)
 - [资产注册表与证据等级](docs/ASSET_REGISTRY_CN.md)
 - [质量验收与交付](docs/QA_ACCEPTANCE_CN.md)
+- [Quality Gate v2：阶段门禁、哈希链与防混版](docs/QUALITY_GATE_V2_CN.md)
+- [全局轨道拓扑 TrackGraph v1](docs/TRACK_GRAPH_CN.md)
 - [新项目检查清单](docs/NEW_PROJECT_CHECKLIST_CN.md)
 - [复用工具包后续开发路线](docs/DEVELOPMENT_ROADMAP_CN.md)
 - [GitHub 私有部署](docs/GITHUB_DEPLOYMENT_CN.md)
 
 ## 当前边界
 
-当前 `v0.1.0` 是可复用生产基础工具包，不是一键生成完整车站的黑盒产品。构件级照片证据包、竖直构件自动语义、完整接触网、站台—雨棚—立面自动拟合和跨段资产化 GLB 仍在产品化路线中。
+当前 `v0.2.0` 是可复用生产基础工具包，不是一键生成完整车站的黑盒产品。当前自动化边界是“已验收几何到质量门禁与交付”；原始点云、全景和相机数据到已验收几何仍需要项目参数适配与人工复核。构件级照片证据包、竖直构件自动语义、完整接触网、站台—雨棚—立面自动拟合和跨段资产化 GLB 仍在产品化路线中。
 
 没有 CRS、垂直基准和独立控制点时，只能报告模型相对于当前点式观测的**内部拟合精度**，不能声明绝对测量精度。
 

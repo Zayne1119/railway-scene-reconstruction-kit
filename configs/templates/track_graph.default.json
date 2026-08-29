@@ -1,0 +1,43 @@
+{
+  "schema_version": "railway.track-graph-settings.v1",
+  "nominal_gauge_m": 1.435,
+  "rail_head_width_m": 0.073,
+  "route_frame_tangent_window_m": 5.0,
+  "source_sampling_resolution_m": 0.05,
+  "matching": {
+    "maximum_identity_gap_m": 10.0,
+    "maximum_lateral_difference_m": 1.0,
+    "maximum_vertical_difference_m": 0.50,
+    "maximum_gauge_difference_m": 0.15
+  },
+  "quality": {
+    "minimum_direction_dot": 0.99,
+    "maximum_frame_determinant_error": 0.001,
+    "maximum_gauge_error_m": 0.02,
+    "maximum_rail_top_crosslevel_m": 0.20,
+    "maximum_candidate_rail_position_correction_m": 0.06,
+    "minimum_observation_bin_coverage": 0.20,
+    "paired_rail_continuity_gate_enabled": false,
+    "minimum_pair_joint_support_ratio": 0.10,
+    "maximum_pair_asymmetric_support_ratio": 0.25,
+    "maximum_pair_internal_joint_gap_m": 5.0,
+    "maximum_pair_recovery_lateral_difference_m": 0.30,
+    "maximum_pair_recovery_gauge_difference_m": 0.03,
+    "maximum_pair_recovery_chainage_gap_m": 5.0,
+    "maximum_pair_recovery_rail_top_difference_m": 0.15,
+    "minimum_track_observation_coverage": 0.80,
+    "maximum_continuous_unobserved_m": 5.0,
+    "maximum_continuous_inferred_m": 5.0,
+    "maximum_inferred_ratio": 0.10,
+    "maximum_seam_chainage_gap_m": 0.02,
+    "maximum_seam_lateral_error_m": 0.075,
+    "maximum_seam_vertical_error_m": 0.075,
+    "maximum_seam_3d_error_m": 0.10,
+    "minimum_seam_tangent_dot": 0.9999985,
+    "maximum_automatic_correction_m": 0.10,
+    "boundary_chainage_tolerance_m": 0.02,
+    "duplicate_maximum_center_distance_m": 0.25,
+    "duplicate_minimum_overlap_m": 2.0
+  },
+  "policy_note": "These are conservative project defaults for fail-closed reconstruction, not railway-industry acceptance regulations. Calibrate and freeze them per project before release."
+}

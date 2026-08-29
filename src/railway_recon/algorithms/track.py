@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -55,12 +54,17 @@ def build_parametric_track(
             raise FileExistsError(f"Refusing to overwrite: {path}")
 
     gauge = float(config["gauge_m"])
+    rail_head_width = float(config.get("rail_profile", {}).get("head_width_m", 0.073))
+    rail_center_spacing = gauge + rail_head_width
     track_lines: list[tuple[str, np.ndarray, np.ndarray]] = []
     for index, pair in enumerate(pairs, start=1):
         positions = [float(value) for value in pair["cross_positions_m"]]
         center_cross = float(np.mean(positions))
         if bool(config.get("constrain_nominal_gauge", True)):
-            positions = [center_cross - gauge / 2.0, center_cross + gauge / 2.0]
+            positions = [
+                center_cross - rail_center_spacing / 2.0,
+                center_cross + rail_center_spacing / 2.0,
+            ]
         z_values = []
         for original in pair["cross_positions_m"]:
             record = line_by_cross.get(round(float(original), 6), {})
@@ -79,7 +83,7 @@ def build_parametric_track(
     assets: list[dict[str, Any]] = []
     build_stats: list[dict[str, Any]] = []
     prefix = _safe_prefix(segment_id)
-    profile = rail_profile()
+    profile = rail_profile(config.get("rail_profile"))
     for track_index, (track_id, left, right) in enumerate(track_lines, start=1):
         track_asset_id = f"{prefix}-TRACK-{track_index:04d}"
         for side, line in (("LEFT", left), ("RIGHT", right)):
@@ -91,14 +95,20 @@ def build_parametric_track(
                     "id": object_name,
                     "type": "rail",
                     "subtype": side.lower(),
-                    "status": "accepted",
+                    "status": "candidate",
                     "chainage_m": 0.0,
                     "evidence_level": "observed",
                     "confidence": float(config["default_observed_confidence"]),
                     "sources": [
                         {"kind": "point_cloud", "reference": f"report:{candidate_report.name}"}
                     ],
-                    "parameters": {"profile": "generic_60kg_style", "gauge_m": gauge},
+                    "parameters": {
+                        "profile": config.get("rail_profile", {}).get(
+                            "name", "generic_60kg_envelope"
+                        ),
+                        "gauge_m": gauge,
+                        "rail_center_spacing_m": rail_center_spacing,
+                    },
                     "geometry": {"node": object_name, "file": str(obj_path)},
                     "limitations": ["Baseline fit; review switches, joints and curved transitions"],
                 }
@@ -145,12 +155,16 @@ def build_parametric_track(
                     "id": track_asset_id,
                     "type": "track",
                     "subtype": "standard_gauge",
-                    "status": "accepted",
+                    "status": "candidate",
                     "chainage_m": 0.0,
                     "evidence_level": "observed",
                     "confidence": float(config["default_observed_confidence"]),
                     "sources": [{"kind": "point_cloud", "reference": f"report:{candidate_report.name}"}],
-                    "parameters": {"gauge_m": gauge, "length_m": length},
+                    "parameters": {
+                        "gauge_m": gauge,
+                        "rail_center_spacing_m": rail_center_spacing,
+                        "length_m": length,
+                    },
                     "geometry": {"file": str(obj_path)},
                     "limitations": ["Candidate-derived baseline; manual acceptance required"],
                 },
@@ -158,12 +172,12 @@ def build_parametric_track(
                     "id": f"{track_asset_id}-SLEEPERS",
                     "type": "sleeper_group",
                     "subtype": "generated_regular_spacing",
-                    "status": "accepted",
+                    "status": "candidate",
                     "chainage_m": 0.0,
                     "evidence_level": "rule_inferred",
                     "confidence": float(config["default_inferred_confidence"]),
                     "sources": [{"kind": "rule", "reference": "track_build.sleeper"}],
-                    "parameters": {**sleeper, "count": int(len(centers))},
+                    "parameters": {**sleeper, "count": len(centers)},
                     "geometry": {"file": str(obj_path)},
                     "limitations": ["Individual sleeper positions are regularized"],
                 },
@@ -171,7 +185,7 @@ def build_parametric_track(
                     "id": f"{track_asset_id}-BED",
                     "type": "track_bed",
                     "subtype": "parametric_ballast",
-                    "status": "accepted",
+                    "status": "candidate",
                     "chainage_m": 0.0,
                     "evidence_level": "rule_inferred",
                     "confidence": float(config["default_inferred_confidence"]),
@@ -218,4 +232,3 @@ def build_parametric_track(
     }
     write_json(report_path, report)
     return report
-

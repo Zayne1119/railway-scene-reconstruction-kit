@@ -1,0 +1,13 @@
+{
+  "schema_version": "railway.benchmark.failure-case.v1",
+  "failure_id": "FAILURE-0001",
+  "scene_id": "synthetic-scene-a",
+  "block_id": "synthetic-scene-a-000-025",
+  "category": "geometry",
+  "severity": "major",
+  "stage": "reconstruction",
+  "status": "open",
+  "description": "Example rail joint discontinuity.",
+  "detected_by_automatic_qa": false,
+  "references": []
+}

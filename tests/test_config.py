@@ -16,6 +16,7 @@ class ConfigTests(unittest.TestCase):
                 project.input_path("point_cloud"),
                 (root / "sample/input/pointcloud/site.laz").resolve(),
             )
+            self.assertTrue((root / "sample/track_graph.json").is_file())
 
     def test_workspace_cannot_escape_project(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

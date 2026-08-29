@@ -10,7 +10,7 @@ import numpy as np
 def audit_obj(path: Path, area_tolerance: float = 1e-12) -> dict[str, Any]:
     vertices: list[list[float]] = []
     faces: list[tuple[int, ...]] = []
-    object_names: set[str] = set()
+    object_names: list[str] = []
     with path.open("r", encoding="utf-8-sig", errors="replace") as stream:
         for line_number, raw in enumerate(stream, start=1):
             line = raw.strip()
@@ -26,7 +26,7 @@ def audit_obj(path: Path, area_tolerance: float = 1e-12) -> dict[str, Any]:
                     indexes.append(value - 1 if value > 0 else len(vertices) + value)
                 faces.append(tuple(indexes))
             elif line.startswith("o "):
-                object_names.add(line[2:].strip())
+                object_names.append(line[2:].strip())
 
     xyz = np.asarray(vertices, dtype=np.float64)
     nonfinite = int(np.count_nonzero(~np.isfinite(xyz))) if len(xyz) else 0
@@ -52,6 +52,7 @@ def audit_obj(path: Path, area_tolerance: float = 1e-12) -> dict[str, Any]:
 
     rounded = [tuple(np.round(vertex, 9)) for vertex in xyz]
     duplicate_vertices = len(rounded) - len(set(rounded))
+    duplicate_object_names = len(object_names) - len(set(object_names))
     passed = (
         bool(vertices)
         and bool(faces)
@@ -59,12 +60,16 @@ def audit_obj(path: Path, area_tolerance: float = 1e-12) -> dict[str, Any]:
         and invalid_index_faces == 0
         and degenerate == 0
         and duplicate_faces == 0
+        and duplicate_object_names == 0
     )
     return {
         "schema_version": "railway.obj-mesh-audit.v1",
         "path": str(path.resolve()),
         "passed": passed,
-        "object_count": len(object_names),
+        "object_count": len(set(object_names)),
+        "object_declaration_count": len(object_names),
+        "object_names": sorted(set(object_names)),
+        "duplicate_object_name_count": duplicate_object_names,
         "vertex_count": len(vertices),
         "face_count": len(faces),
         "triangle_count_after_fan_triangulation": triangle_count,
@@ -83,4 +88,3 @@ def audit_obj(path: Path, area_tolerance: float = 1e-12) -> dict[str, Any]:
             "Run Blender/UE visual acceptance with back-face culling and six fixed views.",
         ],
     }
-

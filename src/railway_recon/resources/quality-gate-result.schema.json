@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/railway-quality-gate-v2.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "project_id",
+    "release_id",
+    "gate_id",
+    "status",
+    "generated_at",
+    "project_root_from_gate",
+    "input_artifacts",
+    "supporting_documents",
+    "check_count",
+    "failed_check_ids",
+    "waived_check_ids"
+  ],
+  "properties": {
+    "schema_version": {"const": "railway.quality-gate.v2"},
+    "project_id": {"type": "string", "minLength": 3},
+    "release_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{2,95}$"},
+    "gate_id": {"type": "string", "pattern": "^QG[0-9]+$"},
+    "status": {"enum": ["PASS", "FAIL", "PASS_WITH_WAIVER", "NOT_APPLICABLE"]},
+    "generated_at": {"type": "string"},
+    "project_root_from_gate": {"type": "string"},
+    "previous_gate": {"type": ["object", "null"]},
+    "input_artifacts": {"type": "array", "items": {"type": "object"}},
+    "registry_identity": {"type": ["object", "null"]},
+    "supporting_documents": {"type": "object"},
+    "check_count": {"type": "integer", "minimum": 0},
+    "failed_check_ids": {"type": "array", "items": {"type": "string"}},
+    "waived_check_ids": {"type": "array", "items": {"type": "string"}},
+    "required_approval_roles": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}

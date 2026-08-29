@@ -1,0 +1,7 @@
+{
+  "schema_version": "railway.synthetic-mesh-audit.v1",
+  "status": "requires_render_mesh_optimization",
+  "cross_asset_duplicate_group_count": 96,
+  "nonmanifold_edge_count": 151,
+  "explicit_normal_primitive_count": 0
+}

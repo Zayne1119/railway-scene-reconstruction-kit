@@ -13,7 +13,6 @@ except ImportError:  # The built-in validation still supports offline field work
 
 from .io import load_json, write_json
 
-
 PROJECT_ID_PATTERN = re.compile(r"^[a-z][a-z0-9_-]{2,63}$")
 
 
@@ -141,6 +140,7 @@ def initialize_project(target: str | Path, project_id: str, name: str) -> Path:
         "input/pointcloud",
         "input/panoramas",
         "workspace/manifests",
+        "workspace/gates",
         "workspace/segments",
         "workspace/derived",
         "workspace/registry",
@@ -157,6 +157,7 @@ def initialize_project(target: str | Path, project_id: str, name: str) -> Path:
     write_json(root / "rail_detection.json", _resource_json("rail-detection.default.json"))
     write_json(root / "linear_detection.json", _resource_json("linear-detection.default.json"))
     write_json(root / "track_build.json", _resource_json("track-build.default.json"))
+    write_json(root / "track_graph.json", _resource_json("track-graph.default.json"))
     write_json(
         root / "projection_calibration.json",
         _resource_json("projection-calibration.default.json"),

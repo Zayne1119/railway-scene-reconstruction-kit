@@ -12,7 +12,6 @@ from ..io import load_json, write_json
 from ..registry import new_registry, summarize_registry, validate_registry_value
 from .mesh import ObjWriter
 
-
 MATERIAL_BY_EVIDENCE = {
     "observed": "Observed",
     "photo_interpreted": "PhotoInterpreted",

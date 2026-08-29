@@ -1,0 +1,23 @@
+{
+  "schema_version": "railway.rail-neutral-evidence.v1",
+  "scene_id": "scene-a",
+  "evidence_source": "raw_point_cloud",
+  "model_overlay": false,
+  "candidate_overlay": false,
+  "stations": [
+    {
+      "task_id": "RAIL-TRUTH-000000",
+      "segment_id": "s000_50m",
+      "block_id": "scene-a-000-025",
+      "chainage_m": 0.0,
+      "cross_section_image": "D:/evidence/cross-section-000000.png",
+      "plan_strip_image": "D:/evidence/plan-strip-000000.png",
+      "point_count": 0,
+      "cross_min_m": -20.0,
+      "cross_max_m": 20.0,
+      "z_min_m": 20.0,
+      "z_max_m": 25.0,
+      "slice_half_width_m": 0.25
+    }
+  ]
+}

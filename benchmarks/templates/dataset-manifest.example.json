@@ -1,0 +1,23 @@
+{
+  "schema_version": "railway.benchmark.dataset-manifest.v1",
+  "dataset_id": "synthetic-railway",
+  "role": "development_case_study",
+  "scenes": [
+    {
+      "scene_id": "synthetic-scene-a",
+      "site_id": "synthetic-site",
+      "split_role": "development",
+      "chainage_range_m": [0.0, 50.0],
+      "coordinate_reference": {
+        "units": "metre",
+        "axis": "Z-up",
+        "epsg": null,
+        "vertical_datum": null,
+        "control_points": null,
+        "independent_check_points": null
+      },
+      "inputs": [],
+      "limitations": ["Public template; no production data is included."]
+    }
+  ]
+}

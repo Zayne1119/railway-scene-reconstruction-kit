@@ -7,6 +7,7 @@
 # Python / Node / IDE
 .venv/
 __pycache__/
+*.egg-info/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
@@ -35,6 +36,7 @@ reports/generated/
 tmp/
 work/
 tools/
+benchmarks/local/
 
 # Point clouds, Gaussian splats, meshes, imagery and archives
 *.las

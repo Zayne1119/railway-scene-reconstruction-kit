@@ -11,7 +11,7 @@ def load_json(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8-sig") as stream:
         value = json.load(stream)
     if not isinstance(value, dict):
-        raise ValueError(f"Expected a JSON object in {path}")
+        raise TypeError(f"Expected a JSON object in {path}")
     return value
 
 
@@ -35,4 +35,3 @@ def sha256_file(path: Path, block_size: int = 8 * 1024 * 1024) -> str:
 def sha256_json(value: Any) -> str:
     encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
-

@@ -11,19 +11,18 @@ from pathlib import Path
 import laspy
 import numpy as np
 
-
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPOSITORY_ROOT / "src"))
 
-from railway_recon.algorithms.rail_candidates import detect_rail_candidates  # noqa: E402
-from railway_recon.algorithms.track import build_parametric_track  # noqa: E402
-from railway_recon.audit import audit_project  # noqa: E402
-from railway_recon.config import initialize_project, load_project  # noqa: E402
-from railway_recon.io import load_json, write_json  # noqa: E402
-from railway_recon.mesh_audit import audit_obj  # noqa: E402
-from railway_recon.qa import quality_report  # noqa: E402
-from railway_recon.registry import initialize_registry, validate_registry_file  # noqa: E402
-from railway_recon.segments import crop_segments, plan_segments  # noqa: E402
+from railway_recon.algorithms.rail_candidates import detect_rail_candidates
+from railway_recon.algorithms.track import build_parametric_track
+from railway_recon.audit import audit_project
+from railway_recon.config import initialize_project, load_project
+from railway_recon.io import load_json, write_json
+from railway_recon.mesh_audit import audit_obj
+from railway_recon.qa import quality_report
+from railway_recon.registry import initialize_registry, validate_registry_file
+from railway_recon.segments import crop_segments, plan_segments
 
 
 def build_synthetic_cloud(path: Path) -> None:
@@ -60,6 +59,10 @@ def main() -> None:
         config["segmentation"]["corridor_half_width_m"] = 5.0
         config["segmentation"]["z_below_camera_m"] = 5.0
         config["segmentation"]["z_above_camera_m"] = 5.0
+        # This smoke test exercises the legacy single-segment Pilot path. The
+        # fail-closed TrackGraph production path has dedicated unit/regression
+        # coverage and requires multi-segment reviewed evidence.
+        config["algorithms"].pop("track_graph", None)
         write_json(config_path, config)
 
         rail_config_path = root / "rail_detection.json"

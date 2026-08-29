@@ -4,7 +4,6 @@ import re
 from pathlib import Path
 from typing import Any
 
-
 BANNED_EXTENSIONS = {
     ".las", ".laz", ".e57", ".pcd", ".ply", ".splat", ".ksplat",
     ".glb", ".gltf", ".fbx", ".obj", ".mtl", ".blend",
@@ -15,6 +14,7 @@ IGNORED_PARTS = {
     ".git", ".venv", "node_modules", "dist", ".next", ".pytest_cache",
     ".ruff_cache", "__pycache__", "projects", "runs",
 }
+IGNORED_PREFIXES = {("benchmarks", "local")}
 TEXT_EXTENSIONS = {
     ".py", ".md", ".json", ".yml", ".yaml", ".toml", ".txt", ".ps1",
     ".js", ".ts", ".tsx", ".css", ".html", ".csv",
@@ -22,7 +22,7 @@ TEXT_EXTENSIONS = {
 SENSITIVE_PATTERNS = {
     "workspace_absolute_path": re.compile(
         "(?:[A-Za-z]:" + r"\\" + "(?:Users|Rail" + "way)" + r"\\" + "|/ho" + "me/)" ,
-        re.I,
+        re.IGNORECASE,
     ),
     "private_ipv4": re.compile(
         r"\b(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
@@ -43,6 +43,8 @@ def safety_check(root: Path, maximum_file_bytes: int = 10 * 1024 * 1024) -> dict
     scanned = 0
     for path in sorted(root.rglob("*")):
         relative = path.relative_to(root)
+        if any(relative.parts[: len(prefix)] == prefix for prefix in IGNORED_PREFIXES):
+            continue
         if any(part in IGNORED_PARTS for part in relative.parts):
             continue
         if not path.is_file():

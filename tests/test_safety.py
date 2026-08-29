@@ -19,3 +19,13 @@ class SafetyTests(unittest.TestCase):
             report = safety_check(root)
             self.assertFalse(report["passed"])
             self.assertEqual(report["findings"][0]["kind"], "banned_extension")
+
+    def test_safety_skips_private_local_benchmark(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            private = root / "benchmarks" / "local" / "site-a"
+            private.mkdir(parents=True)
+            (private / "manifest.json").write_text(
+                '{"source":"D:\\\\Railway\\\\private.laz"}', encoding="utf-8"
+            )
+            self.assertTrue(safety_check(root)["passed"])

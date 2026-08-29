@@ -1,0 +1,16 @@
+{
+  "schema_version": "railway.benchmark.experiment.v1",
+  "experiment_id": "synthetic-full-auto-v1",
+  "protocol_id": "paper-v1",
+  "dataset_id": "synthetic-railway",
+  "split_id": "synthetic-development-v1",
+  "ground_truth_id": "synthetic-gt-v1",
+  "method_id": "railway-recon",
+  "variant_id": "full",
+  "execution_mode": "auto",
+  "status": "planned",
+  "command": [],
+  "parameters": {},
+  "random_seeds": [20260826],
+  "locked_before_test": false
+}

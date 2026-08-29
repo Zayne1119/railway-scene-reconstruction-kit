@@ -1,7 +1,11 @@
 {
   "title": "Synthetic Railway Reconstruction",
+  "acceptance_mode": false,
+  "release_id": null,
   "model_url": "/models/scene.glb",
+  "model_sha256": null,
   "registry_url": "/data/asset_registry.json",
+  "registry_sha256": null,
+  "asset_set_sha256": null,
   "notes": "Copy this file to project.json only in a local or approved deployment."
 }
-

@@ -4,12 +4,28 @@
   "polyline_step_m": 0.5,
   "default_observed_confidence": 0.85,
   "default_inferred_confidence": 0.55,
+  "global_mesh": {
+    "require_observed_edges": true,
+    "sleeper_phase_chainage_m": 0.0,
+    "maximum_rail_sleeper_contact_error_m": 0.001,
+    "maximum_centerline_step_ratio": 2.0,
+    "maximum_centerline_deflection_deg": 15.0
+  },
+  "rail_profile": {
+    "name": "generic_60kg_dimensional_envelope",
+    "head_width_m": 0.073,
+    "web_thickness_m": 0.0165,
+    "foot_width_m": 0.150,
+    "height_m": 0.176,
+    "head_depth_m": 0.045,
+    "foot_depth_m": 0.020
+  },
   "sleeper": {
     "spacing_m": 0.60,
     "length_m": 2.60,
     "width_m": 0.25,
     "height_m": 0.16,
-    "top_below_rail_m": 0.145
+    "top_below_rail_m": 0.1765
   },
   "track_bed": {
     "top_width_m": 2.90,

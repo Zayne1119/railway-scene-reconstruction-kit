@@ -1,6 +1,12 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import {
+  acceptanceRequested,
+  assetSetSha256,
+  sha256Hex,
+  validateAcceptanceConfig,
+} from "./acceptance.js";
 import "./style.css";
 
 const canvas = document.querySelector("#viewport");
@@ -35,6 +41,11 @@ const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
 function showMessage(text) { message.textContent = text; message.hidden = false; }
+function failClosed(text) {
+  status.textContent = "验收失败";
+  showMessage(text);
+  canvas.dataset.acceptance = "failed";
+}
 function assetIdFor(object) {
   let current = object;
   while (current) {
@@ -87,37 +98,112 @@ function addSyntheticPlaceholder() {
 async function load() {
   const query = new URLSearchParams(location.search);
   const configUrl = query.get("config") || "/project.json";
+  let acceptanceMode = acceptanceRequested(query);
   let config;
   try {
     const response = await fetch(configUrl, { cache: "no-store" });
     if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
     config = await response.json();
   } catch (error) {
+    if (acceptanceMode) {
+      failClosed(`无法加载验收配置 ${configUrl}：${error.message || error}`);
+      return;
+    }
     status.textContent = "等待项目配置";
     showMessage(`未找到 ${configUrl}。已显示合成占位场景；复制 public/project.example.json 为 public/project.json 并填写模型与注册表地址。`);
     addSyntheticPlaceholder();
     return;
   }
+  acceptanceMode = acceptanceRequested(query, config);
+  if (acceptanceMode) {
+    const configErrors = validateAcceptanceConfig(config);
+    if (configErrors.length) {
+      failClosed(configErrors.join("；"));
+      return;
+    }
+    canvas.dataset.acceptance = "verifying";
+  }
   title.textContent = config.title || "铁路场景重建验收";
-  const registryResponse = await fetch(config.registry_url, { cache: "no-store" });
-  if (registryResponse.ok) {
-    const value = await registryResponse.json();
-    registry = new Map((value.assets || []).map((asset) => [asset.id, asset]));
-  } else {
-    showMessage("资产注册表加载失败；模型可以浏览，但资产查询不能作为验收结果。 ");
+  let registryValue;
+  try {
+    const registryResponse = await fetch(config.registry_url, { cache: "no-store" });
+    if (!registryResponse.ok) {
+      throw new Error(`${registryResponse.status} ${registryResponse.statusText}`);
+    }
+    const registryBytes = await registryResponse.arrayBuffer();
+    if (acceptanceMode) {
+      const actualHash = await sha256Hex(registryBytes);
+      if (actualHash !== config.registry_sha256.toLowerCase()) {
+        throw new Error(`注册表 SHA-256 不一致：${actualHash}`);
+      }
+    }
+    registryValue = JSON.parse(new TextDecoder().decode(registryBytes));
+    const assets = registryValue.assets || [];
+    registry = new Map(assets.map((asset) => [asset.id, asset]));
+    if (acceptanceMode) {
+      if (registryValue.release_id !== config.release_id) {
+        throw new Error("注册表 release_id 与项目配置不一致");
+      }
+      const actualAssetSet = await assetSetSha256(assets);
+      if (actualAssetSet !== config.asset_set_sha256.toLowerCase()) {
+        throw new Error(`资产集合 SHA-256 不一致：${actualAssetSet}`);
+      }
+      const blocking = assets.filter((asset) => asset.status !== "accepted");
+      if (!assets.length || blocking.length) {
+        throw new Error(`clean 注册表包含 ${blocking.length} 个非 accepted 资产`);
+      }
+    }
+  } catch (error) {
+    if (acceptanceMode) {
+      failClosed(`资产注册表验收失败：${error.message || error}`);
+      return;
+    }
+    showMessage(`资产注册表加载失败；只能浏览模型：${error.message || error}`);
   }
   status.textContent = "加载模型";
-  new GLTFLoader().load(
-    config.model_url,
-    (gltf) => {
-      modelRoot = gltf.scene;
-      scene.add(modelRoot);
-      fitCamera(modelRoot);
-      status.textContent = `${registry.size} 项资产 · 模型已加载`;
-    },
-    (event) => { if (event.total) status.textContent = `加载 ${Math.round(event.loaded / event.total * 100)}%`; },
-    (error) => { status.textContent = "模型加载失败"; showMessage(`无法加载模型：${error.message || error}`); addSyntheticPlaceholder(); },
-  );
+  try {
+    const modelResponse = await fetch(config.model_url, { cache: "no-store" });
+    if (!modelResponse.ok) throw new Error(`${modelResponse.status} ${modelResponse.statusText}`);
+    const modelBytes = await modelResponse.arrayBuffer();
+    if (acceptanceMode) {
+      const actualHash = await sha256Hex(modelBytes);
+      if (actualHash !== config.model_sha256.toLowerCase()) {
+        throw new Error(`模型 SHA-256 不一致：${actualHash}`);
+      }
+    }
+    const modelUrl = new URL(config.model_url, location.href);
+    const basePath = modelUrl.href.slice(0, modelUrl.href.lastIndexOf("/") + 1);
+    const gltf = await new Promise((resolve, reject) => {
+      new GLTFLoader().parse(modelBytes, basePath, resolve, reject);
+    });
+    modelRoot = gltf.scene;
+    if (acceptanceMode) {
+      const missing = new Set();
+      modelRoot.traverse((object) => {
+        if (!object.isMesh) return;
+        const id = assetIdFor(object);
+        if (!registry.has(id)) missing.add(id);
+      });
+      if (missing.size) {
+        throw new Error(`存在 ${missing.size} 个未注册 Mesh 节点：${[...missing].slice(0, 10).join(", ")}`);
+      }
+    }
+    scene.add(modelRoot);
+    fitCamera(modelRoot);
+    status.textContent = acceptanceMode
+      ? `${registry.size} 项资产 · 验收哈希匹配`
+      : `${registry.size} 项资产 · 模型已加载`;
+    if (acceptanceMode) canvas.dataset.acceptance = "passed";
+  } catch (error) {
+    modelRoot = null;
+    if (acceptanceMode) {
+      failClosed(`模型验收失败：${error.message || error}`);
+      return;
+    }
+    status.textContent = "模型加载失败";
+    showMessage(`无法加载模型：${error.message || error}`);
+    addSyntheticPlaceholder();
+  }
 }
 
 canvas.addEventListener("pointerdown", (event) => {
@@ -161,4 +247,3 @@ function resize() {
 function animate() { resize(); controls.update(); renderer.render(scene, camera); requestAnimationFrame(animate); }
 load();
 animate();
-

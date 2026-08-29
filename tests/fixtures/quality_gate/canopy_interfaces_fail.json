@@ -1,0 +1,8 @@
+{
+  "schema_version": "railway.synthetic-canopy-interface-audit.v1",
+  "status": "fail",
+  "support_count": 34,
+  "support_mismatch_count": 34,
+  "maximum_interface_mismatch_m": 0.808,
+  "missing_stair_top_landing_count": 4
+}

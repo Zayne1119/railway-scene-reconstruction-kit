@@ -1,0 +1,6 @@
+{
+  "schema_version": "railway.synthetic-segment-audit.v1",
+  "status": "conditional_pass",
+  "observation_coverage": 0.483,
+  "gauge_error_m": 0.146
+}

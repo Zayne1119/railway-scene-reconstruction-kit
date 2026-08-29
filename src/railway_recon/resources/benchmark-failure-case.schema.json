@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/railway-benchmark-failure-case-v1.json",
+  "type": "object",
+  "required": ["schema_version", "failure_id", "scene_id", "block_id", "category", "severity", "stage", "status", "description", "detected_by_automatic_qa", "references"],
+  "properties": {
+    "schema_version": {"const": "railway.benchmark.failure-case.v1"},
+    "failure_id": {"type": "string", "minLength": 3},
+    "scene_id": {"type": "string", "minLength": 2},
+    "block_id": {"type": "string", "minLength": 3},
+    "category": {"enum": ["omission", "commission", "misclassification", "geometry", "topology", "confidence_overestimate", "mesh_export"]},
+    "severity": {"enum": ["minor", "major", "critical"]},
+    "stage": {"type": "string"},
+    "status": {"enum": ["open", "confirmed", "fixed", "accepted_limitation"]},
+    "description": {"type": "string", "minLength": 1},
+    "detected_by_automatic_qa": {"type": "boolean"},
+    "references": {"type": "array", "items": {"type": "string"}},
+    "root_cause": {"type": ["string", "null"]},
+    "resolution": {"type": ["string", "null"]}
+  },
+  "additionalProperties": true
+}

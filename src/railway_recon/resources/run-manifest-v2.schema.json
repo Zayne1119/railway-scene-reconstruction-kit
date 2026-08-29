@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/railway-run-manifest-v2.json",
+  "type": "object",
+  "required": ["schema_version", "run_id", "protocol_id", "dataset_id", "split_id", "method_id", "variant_id", "execution_mode", "status", "started_at", "finished_at", "command", "config_hashes", "inputs", "ground_truth", "outputs", "random_seeds", "runtime", "human_review", "warnings", "limitations"],
+  "properties": {
+    "schema_version": {"const": "railway.run-manifest.v2"},
+    "run_id": {"type": "string", "minLength": 3},
+    "protocol_id": {"type": "string", "minLength": 3},
+    "dataset_id": {"type": "string", "minLength": 3},
+    "split_id": {"type": "string", "minLength": 3},
+    "method_id": {"type": "string", "minLength": 1},
+    "variant_id": {"type": "string", "minLength": 1},
+    "execution_mode": {"enum": ["auto", "HITL"]},
+    "status": {"enum": ["completed", "failed"]},
+    "started_at": {"type": "string"},
+    "finished_at": {"type": "string"},
+    "command": {"type": "array", "items": {"type": "string"}},
+    "config_hashes": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^[a-fA-F0-9]{64}$"}},
+    "inputs": {"type": "array", "items": {"$ref": "#/$defs/file_record"}},
+    "ground_truth": {"type": "array", "items": {"$ref": "#/$defs/file_record"}},
+    "outputs": {"type": "array", "items": {"$ref": "#/$defs/file_record"}},
+    "random_seeds": {"type": "array", "items": {"type": "integer"}},
+    "runtime": {"type": "object"},
+    "human_review": {"type": "object"},
+    "warnings": {"type": "array", "items": {"type": "string"}},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "file_record": {
+      "type": "object",
+      "required": ["id", "kind", "reference", "required", "exists"],
+      "properties": {
+        "id": {"type": "string"},
+        "kind": {"type": "string"},
+        "reference": {"type": "string"},
+        "required": {"type": "boolean"},
+        "exists": {"type": "boolean"},
+        "bytes": {"type": "integer", "minimum": 0},
+        "sha256": {"type": "string", "pattern": "^[a-fA-F0-9]{64}$"},
+        "hash_source": {"enum": ["computed", "declared"]},
+        "size_matches_declared": {"type": "boolean"}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

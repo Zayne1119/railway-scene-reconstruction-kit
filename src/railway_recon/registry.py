@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import csv
-from datetime import datetime, timezone
+import hashlib
+from datetime import UTC, datetime
 from importlib import resources
 from pathlib import Path
 from typing import Any
@@ -12,14 +13,14 @@ except ImportError:  # Keep the field CLI usable in an offline pre-provisioned P
     Draft202012Validator = None  # type: ignore[assignment]
 
 from .config import ProjectConfig
-from .io import load_json, write_json
+from .io import load_json, sha256_json, write_json
 
 
 def new_registry(project_id: str) -> dict[str, Any]:
     return {
         "schema_version": "railway.asset-registry.v1",
         "project_id": project_id,
-        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(UTC).isoformat(),
         "assets": [],
         "relations": [],
         "summary": {"asset_count": 0, "by_type": {}, "by_evidence_level": {}},
@@ -99,6 +100,51 @@ def validate_registry_value(registry: dict[str, Any]) -> list[str]:
 def validate_registry_file(path: Path) -> tuple[dict[str, Any], list[str]]:
     registry = load_json(path)
     return registry, validate_registry_value(registry)
+
+
+def freeze_release_registry(
+    project: ProjectConfig,
+    release_id: str,
+    output: str | Path,
+) -> dict[str, Any]:
+    source_path = project.workspace_path("asset_registry")
+    registry = load_json(source_path)
+    errors = validate_registry_value(registry)
+    if errors:
+        raise ValueError("Cannot freeze an invalid registry:\n- " + "\n- ".join(errors))
+    assets = list(registry.get("assets", []))
+    if not assets:
+        raise ValueError("Cannot freeze an empty release registry")
+    blocking = sorted(
+        str(asset.get("id")) for asset in assets if asset.get("status") != "accepted"
+    )
+    if blocking:
+        raise ValueError(
+            "Release registry contains non-accepted assets: " + ", ".join(blocking[:20])
+        )
+    output_path = project.resolve(output)
+    root = project.root.resolve()
+    if output_path != root and root not in output_path.parents:
+        raise ValueError(f"Release registry must stay inside the project directory: {output_path}")
+    if output_path.exists():
+        raise FileExistsError(f"Refusing to overwrite frozen release registry: {output_path}")
+    asset_ids = sorted(str(asset["id"]) for asset in assets)
+    registry["release_id"] = release_id
+    registry["asset_set_sha256"] = hashlib.sha256(
+        "\n".join(asset_ids).encode("utf-8")
+    ).hexdigest()
+    registry["relation_set_sha256"] = sha256_json(
+        sorted(registry.get("relations", []), key=lambda item: str(item.get("id", "")))
+    )
+    registry["frozen_at"] = datetime.now(UTC).isoformat()
+    write_json(output_path, registry)
+    return {
+        "registry_path": str(output_path),
+        "release_id": release_id,
+        "asset_count": len(asset_ids),
+        "asset_set_sha256": registry["asset_set_sha256"],
+        "relation_set_sha256": registry["relation_set_sha256"],
+    }
 
 
 def _asset_from_csv(row: dict[str, str]) -> dict[str, Any]:
@@ -181,7 +227,7 @@ def import_registry_records(
             item for item in registry["relations"] if item["id"] not in relation_conflicts
         ]
     registry["relations"].extend(relations)
-    registry["updated_at"] = datetime.now(timezone.utc).isoformat()
+    registry["updated_at"] = datetime.now(UTC).isoformat()
     registry["summary"] = summarize_registry(registry)
     errors = validate_registry_value(registry)
     if errors:

@@ -6,6 +6,9 @@
   "properties": {
     "schema_version": {"const": "railway.asset-registry.v1"},
     "project_id": {"type": "string", "minLength": 3},
+    "release_id": {"type": ["string", "null"]},
+    "asset_set_sha256": {"type": ["string", "null"], "pattern": "^[a-fA-F0-9]{64}$"},
+    "relation_set_sha256": {"type": ["string", "null"], "pattern": "^[a-fA-F0-9]{64}$"},
     "updated_at": {"type": "string"},
     "assets": {
       "type": "array",

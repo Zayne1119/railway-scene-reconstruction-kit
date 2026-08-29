@@ -1,0 +1,9 @@
+{
+  "schema_version": "railway.synthetic-track-full-length-audit.v1",
+  "status": "fail",
+  "metrics": {
+    "vertical_profile_p95_m": 0.0800,
+    "cant_residual_p95_m": 0.0813
+  },
+  "reason": "Seam-only QA is insufficient"
+}

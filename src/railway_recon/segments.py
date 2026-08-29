@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import copy
-import math
 import os
 import uuid
 from contextlib import ExitStack
-from pathlib import Path
 from typing import Any
 
 import laspy
@@ -14,6 +12,45 @@ import numpy as np
 from .camera import camera_trajectory, load_camera_rows
 from .config import ProjectConfig
 from .io import write_json
+
+
+def _segment_intervals(
+    total_m: float,
+    default_length_m: float,
+    adaptive_zones: list[dict[str, Any]],
+) -> list[tuple[float, float]]:
+    if total_m <= 0 or default_length_m <= 0:
+        raise ValueError("trajectory and default segment length must be positive")
+    zones = sorted(adaptive_zones, key=lambda item: float(item["start_m"]))
+    previous_end = 0.0
+    for zone in zones:
+        start = float(zone["start_m"])
+        end = float(zone["end_m"])
+        length = float(zone["length_m"])
+        if start < 0 or end > total_m or end <= start or length <= 0:
+            raise ValueError(f"Invalid adaptive segment length zone: {zone}")
+        if start < previous_end - 1e-9:
+            raise ValueError("Adaptive segment length zones must not overlap")
+        previous_end = end
+
+    intervals: list[tuple[float, float]] = []
+
+    def append_range(start_m: float, end_m: float, length_m: float) -> None:
+        cursor = start_m
+        while cursor < end_m - 1e-9:
+            boundary = min(end_m, cursor + length_m)
+            intervals.append((cursor, boundary))
+            cursor = boundary
+
+    cursor = 0.0
+    for zone in zones:
+        start = float(zone["start_m"])
+        end = float(zone["end_m"])
+        append_range(cursor, start, default_length_m)
+        append_range(start, end, float(zone["length_m"]))
+        cursor = end
+    append_range(cursor, total_m, default_length_m)
+    return intervals
 
 
 def plan_segments(project: ProjectConfig) -> dict[str, Any]:
@@ -30,12 +67,14 @@ def plan_segments(project: ProjectConfig) -> dict[str, Any]:
     if length <= 0 or padding <= 0:
         raise ValueError("segmentation length and corridor half width must be positive")
 
-    segment_count = max(1, math.ceil(total / length))
+    adaptive_zones = settings.get("adaptive_length_zones", [])
+    if not isinstance(adaptive_zones, list):
+        raise TypeError("segmentation.adaptive_length_zones must be an array")
+    intervals = _segment_intervals(total, length, adaptive_zones)
     segments: list[dict[str, Any]] = []
     distances = np.array([item["distance_m"] for item in trajectory], dtype=np.float64)
-    for index in range(segment_count):
-        start = index * length
-        end = min(total, (index + 1) * length)
+    segment_ids: set[str] = set()
+    for start, end in intervals:
         chosen = [item for item in trajectory if start <= item["distance_m"] <= end]
         if len(chosen) < 2:
             nearest = np.argsort(np.minimum(abs(distances - start), abs(distances - end)))[:2]
@@ -44,6 +83,12 @@ def plan_segments(project: ProjectConfig) -> dict[str, Any]:
         ys = [item["y"] for item in chosen]
         zs = [item["z"] for item in chosen]
         segment_id = f"s{round(start):04d}_{round(end):04d}m"
+        if segment_id in segment_ids:
+            raise ValueError(
+                "Adaptive segmentation produced duplicate rounded segment id: "
+                f"{segment_id}"
+            )
+        segment_ids.add(segment_id)
         segments.append(
             {
                 "id": segment_id,
@@ -69,6 +114,7 @@ def plan_segments(project: ProjectConfig) -> dict[str, Any]:
         "planning_method": "camera_trajectory_axis_aligned_envelope",
         "trajectory_length_m": total,
         "segment_length_m": length,
+        "adaptive_length_zones": adaptive_zones,
         "corridor_half_width_m": padding,
         "segments": segments,
         "warning": (

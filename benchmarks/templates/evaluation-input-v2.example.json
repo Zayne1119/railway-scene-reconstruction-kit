@@ -1,0 +1,58 @@
+{
+  "schema_version": "railway.benchmark.evaluation-input.v2",
+  "evaluation_id": "scene-a-method-a-v2",
+  "experiment_id": "scene-a-method-a",
+  "matching": {
+    "max_center_distance_m": 1.0,
+    "block_restricted": true
+  },
+  "ground_truth_assets": [
+    {
+      "id": "GT-TRACK-001",
+      "type": "track",
+      "evaluable": true,
+      "center_m": [0.0, 0.0, 0.0],
+      "block_id": "scene-a-000-025",
+      "evidence_status": "supported"
+    }
+  ],
+  "predicted_assets": [
+    {
+      "id": "METHOD-A-0001",
+      "type": "track",
+      "center_m": [0.1, 0.0, 0.0],
+      "block_id": "scene-a-000-025",
+      "risk_score": 0.1,
+      "declared_evidence_level": "observed",
+      "independent_evidence_status": "supported",
+      "released": true
+    }
+  ],
+  "ground_truth_relations": [],
+  "predicted_relations": [],
+  "distance_sets": [],
+  "track_measurements": [
+    {
+      "name": "track-001-raw",
+      "stage": "raw_detection",
+      "observed_gauge_m": 1.44,
+      "reference_gauge_m": 1.435,
+      "tolerance_m": 0.01
+    },
+    {
+      "name": "track-001-constrained",
+      "stage": "constrained_output",
+      "observed_gauge_m": 1.435,
+      "reference_gauge_m": 1.435,
+      "correction_m": -0.005,
+      "tolerance_m": 0.01
+    }
+  ],
+  "human_review": {
+    "corridor_length_m": 25.0,
+    "events": []
+  },
+  "limitations": [
+    "Example only; replace with frozen predictions and independent truth."
+  ]
+}

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -51,7 +51,7 @@ def audit_project(project: ProjectConfig, full_hash: bool = False) -> dict[str, 
     result = {
         "schema_version": "railway.project-audit.v1",
         "project_id": project.project_id,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "config_path": str(project.path),
         "config_sha256": sha256_json(project.value),
         "point_cloud": inspect_point_cloud(point_cloud),

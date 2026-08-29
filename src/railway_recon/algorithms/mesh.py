@@ -42,13 +42,37 @@ class ObjWriter:
         os.replace(temporary, path)
 
 
-def rail_profile() -> np.ndarray:
+def rail_profile(parameters: dict[str, float] | None = None) -> np.ndarray:
+    settings = parameters or {}
+    head_width = float(settings.get("head_width_m", 0.073))
+    web_width = float(settings.get("web_thickness_m", 0.0165))
+    foot_width = float(settings.get("foot_width_m", 0.150))
+    height = float(settings.get("height_m", 0.176))
+    head_depth = float(settings.get("head_depth_m", 0.045))
+    foot_depth = float(settings.get("foot_depth_m", 0.020))
+    if not (
+        0 < web_width < head_width <= foot_width
+        and 0 < head_depth
+        and 0 < foot_depth
+        and head_depth + foot_depth < height
+    ):
+        raise ValueError("Invalid configurable rail profile dimensions")
     return np.asarray(
         [
-            [-0.0375, 0.000], [0.0375, 0.000], [0.0375, -0.030],
-            [0.0120, -0.045], [0.0100, -0.125], [0.0750, -0.135],
-            [0.0750, -0.155], [-0.0750, -0.155], [-0.0750, -0.135],
-            [-0.0100, -0.125], [-0.0120, -0.045], [-0.0375, -0.030],
+            [-head_width / 2.0, 0.0],
+            [head_width / 2.0, 0.0],
+            [head_width / 2.0, -head_depth * 0.60],
+            [head_width * 0.33, -head_depth],
+            [web_width / 2.0, -head_depth * 1.18],
+            [web_width / 2.0, -height + foot_depth * 1.50],
+            [foot_width / 2.0, -height + foot_depth],
+            [foot_width / 2.0, -height],
+            [-foot_width / 2.0, -height],
+            [-foot_width / 2.0, -height + foot_depth],
+            [-web_width / 2.0, -height + foot_depth * 1.50],
+            [-web_width / 2.0, -head_depth * 1.18],
+            [-head_width * 0.33, -head_depth],
+            [-head_width / 2.0, -head_depth * 0.60],
         ],
         dtype=np.float64,
     )
@@ -126,6 +150,11 @@ Kd 0.24 0.27 0.30
 Ks 0.65 0.65 0.65
 Ns 80
 
+newmtl RailSteelInferred
+Kd 1.00 0.28 0.02
+Ks 0.20 0.20 0.20
+Ns 20
+
 newmtl SleeperConcrete
 Kd 0.58 0.57 0.54
 Ks 0.08 0.08 0.08
@@ -140,4 +169,3 @@ Ns 3
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(content, encoding="utf-8", newline="\n")
     os.replace(temporary, path)
-

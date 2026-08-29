@@ -20,7 +20,8 @@
           "properties": {
             "epsg": {"type": ["integer", "null"]},
             "vertical_datum": {"type": ["string", "null"]},
-            "control_points": {"type": ["string", "null"]}
+            "control_points": {"type": ["string", "null"]},
+            "independent_check_points": {"type": ["string", "null"]}
           },
           "additionalProperties": true
         }
@@ -50,7 +51,20 @@
         "corridor_half_width_m": {"type": "number", "exclusiveMinimum": 0},
         "z_below_camera_m": {"type": "number", "minimum": 0},
         "z_above_camera_m": {"type": "number", "minimum": 0},
-        "chunk_size_points": {"type": "integer", "minimum": 1000}
+        "chunk_size_points": {"type": "integer", "minimum": 1000},
+        "adaptive_length_zones": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["start_m", "end_m", "length_m"],
+            "properties": {
+              "start_m": {"type": "number", "minimum": 0},
+              "end_m": {"type": "number", "exclusiveMinimum": 0},
+              "length_m": {"type": "number", "exclusiveMinimum": 0}
+            },
+            "additionalProperties": false
+          }
+        }
       },
       "additionalProperties": false
     },
@@ -63,6 +77,7 @@
         "rail_detection": {"type": "string"},
         "linear_detection": {"type": "string"},
         "track_build": {"type": "string"},
+        "track_graph": {"type": "string"},
         "projection_calibration": {"type": "string"}
       },
       "additionalProperties": true

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/railway-benchmark-ground-truth-v1.json",
+  "type": "object",
+  "required": ["schema_version", "ground_truth_id", "dataset_id", "split_id", "truth_level", "status", "instances", "relations", "exclusion_regions", "annotation"],
+  "properties": {
+    "schema_version": {"const": "railway.benchmark.ground-truth.v1"},
+    "ground_truth_id": {"type": "string", "minLength": 3},
+    "dataset_id": {"type": "string", "minLength": 3},
+    "split_id": {"type": "string", "minLength": 3},
+    "truth_level": {"enum": ["GT-L0_survey", "GT-L1_observed_consensus", "GT-L2_expert_ledger", "GT-L3_pseudo"]},
+    "status": {"enum": ["draft", "locked", "adjudicated"]},
+    "instances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "scene_id", "block_id", "existence", "geometry_evaluable"],
+        "properties": {
+          "id": {"type": "string", "minLength": 3},
+          "type": {"type": "string", "minLength": 1},
+          "scene_id": {"type": "string"},
+          "block_id": {"type": "string"},
+          "existence": {"enum": ["present", "absent", "uncertain"]},
+          "geometry_evaluable": {"type": "boolean"},
+          "geometry_reference": {"type": ["object", "null"]},
+          "evidence_state": {"enum": ["observed", "weak", "inferred", "unsupported", "not_applicable"]},
+          "annotator_ids": {"type": "array", "items": {"type": "string"}},
+          "limitations": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": true
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "from", "to"],
+        "properties": {
+          "id": {"type": "string"},
+          "type": {"type": "string"},
+          "from": {"type": "string"},
+          "to": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "exclusion_regions": {"type": "array", "items": {"type": "object"}},
+    "annotation": {
+      "type": "object",
+      "required": ["blind_to_final_model", "double_annotation_fraction", "adjudication_required"],
+      "properties": {
+        "blind_to_final_model": {"type": "boolean"},
+        "double_annotation_fraction": {"type": "number", "minimum": 0, "maximum": 1},
+        "adjudication_required": {"type": "boolean"}
+      }
+    }
+  },
+  "additionalProperties": false
+}

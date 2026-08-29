@@ -6,7 +6,12 @@
     "confidentiality": "public_synthetic",
     "units": "metre",
     "axis": "Z-up",
-    "crs": {"epsg": null, "vertical_datum": null, "control_points": null}
+    "crs": {
+      "epsg": null,
+      "vertical_datum": null,
+      "control_points": null,
+      "independent_check_points": null
+    }
   },
   "inputs": {
     "point_cloud": "input/pointcloud/site.laz",
@@ -15,6 +20,7 @@
   },
   "workspace": {
     "manifests": "workspace/manifests",
+    "gates": "workspace/gates",
     "segment_manifest": "workspace/manifests/segments.generated.json",
     "segments": "workspace/segments",
     "derived": "workspace/derived",
@@ -46,6 +52,7 @@
     "rail_detection": "rail_detection.json",
     "linear_detection": "linear_detection.json",
     "track_build": "track_build.json",
+    "track_graph": "track_graph.json",
     "projection_calibration": "projection_calibration.json"
   },
   "rules": "rules.json"

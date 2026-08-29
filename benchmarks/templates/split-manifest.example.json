@@ -1,0 +1,19 @@
+{
+  "schema_version": "railway.benchmark.split-manifest.v1",
+  "split_id": "synthetic-development-v1",
+  "dataset_id": "synthetic-railway",
+  "protocol_id": "paper-v1",
+  "blocks": [
+    {
+      "block_id": "synthetic-scene-a-000-025",
+      "evaluation_group_id": "synthetic-scene-a-eval-000-050",
+      "scene_id": "synthetic-scene-a",
+      "role": "development",
+      "core_start_m": 0.0,
+      "core_end_m": 25.0,
+      "context_before_m": 0.0,
+      "context_after_m": 10.0,
+      "complexity_tags": ["straight_track", "platform"]
+    }
+  ]
+}

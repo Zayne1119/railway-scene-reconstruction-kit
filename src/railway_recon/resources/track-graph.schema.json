@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/railway-track-graph-v1.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "project_id",
+    "status",
+    "settings_sha256",
+    "canonical_axis",
+    "route",
+    "sources",
+    "observations",
+    "nodes",
+    "edges",
+    "seams",
+    "tracks",
+    "identity_events",
+    "policy"
+  ],
+  "properties": {
+    "schema_version": {"const": "railway.track-graph.v1"},
+    "project_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["candidate", "review_required", "pass", "fail"]},
+    "settings_sha256": {"type": "string", "pattern": "^[a-fA-F0-9]{64}$"},
+    "canonical_axis": {"const": "camera_trajectory_chainage"},
+    "route": {
+      "type": "object",
+      "required": ["camera_csv_sha256", "trajectory_length_m", "source_chainage_start_m", "source_chainage_end_m"],
+      "properties": {
+        "camera_csv_sha256": {"type": "string", "pattern": "^[a-fA-F0-9]{64}$"}
+      }
+    },
+    "sources": {"type": "array", "minItems": 1},
+    "observations": {"type": "array", "minItems": 1},
+    "nodes": {"type": "array", "minItems": 2},
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "track_id", "from_node", "to_node", "chainage_start_m", "chainage_end_m", "evidence_level"],
+        "properties": {
+          "evidence_level": {"enum": ["observed", "photo_interpreted", "rule_inferred"]}
+        }
+      }
+    },
+    "seams": {"type": "array"},
+    "tracks": {"type": "array", "minItems": 1},
+    "identity_events": {"type": "array"},
+    "policy": {"type": "object"}
+  },
+  "additionalProperties": true
+}

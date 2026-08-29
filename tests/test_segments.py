@@ -11,6 +11,43 @@ from railway_recon.segments import crop_segments, plan_segments
 
 
 class SegmentTests(unittest.TestCase):
+    def test_adaptive_segment_zone_refines_only_requested_chainage(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config_path = initialize_project(root / "adaptive", "adaptive-project", "Adaptive")
+            project = load_project(config_path)
+            project.value["segmentation"]["adaptive_length_zones"] = [
+                {"start_m": 20.0, "end_m": 80.0, "length_m": 10.0}
+            ]
+            camera_path = project.input_path("camera_csv")
+            assert camera_path is not None
+            with camera_path.open("w", encoding="utf-8", newline="") as stream:
+                writer = csv.writer(stream)
+                writer.writerow(["index", "timestamp", "file", "x", "y", "z"])
+                for index in range(11):
+                    writer.writerow(
+                        [index, index, f"{index}.jpg", index * 10, 0, 2]
+                    )
+
+            manifest = plan_segments(project)
+            ranges = [
+                (item["chainage_start_m"], item["chainage_end_m"])
+                for item in manifest["segments"]
+            ]
+            self.assertEqual(
+                ranges,
+                [
+                    (0.0, 20.0),
+                    (20.0, 30.0),
+                    (30.0, 40.0),
+                    (40.0, 50.0),
+                    (50.0, 60.0),
+                    (60.0, 70.0),
+                    (70.0, 80.0),
+                    (80.0, 100.0),
+                ],
+            )
+
     def test_plan_and_crop_synthetic_las(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -42,4 +79,3 @@ class SegmentTests(unittest.TestCase):
             self.assertGreaterEqual(
                 sum(item["point_count"] for item in report["segments"]), 5
             )
-

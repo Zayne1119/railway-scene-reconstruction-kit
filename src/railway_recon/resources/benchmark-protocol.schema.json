@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/railway-benchmark-protocol-v1.json",
+  "type": "object",
+  "required": ["schema_version", "protocol_id", "title", "spatial_split", "evaluation_modes", "evidence_levels", "primary_metrics", "statistics"],
+  "properties": {
+    "schema_version": {"const": "railway.benchmark.protocol.v1"},
+    "protocol_id": {"type": "string", "minLength": 3},
+    "title": {"type": "string", "minLength": 1},
+    "created_at": {"type": "string"},
+    "spatial_split": {
+      "type": "object",
+      "required": ["assignment", "atomic_block_m", "evaluation_core_m", "context_m", "score_context"],
+      "properties": {
+        "assignment": {"const": "unique_chainage"},
+        "atomic_block_m": {"type": "number", "exclusiveMinimum": 0},
+        "evaluation_core_m": {"type": "number", "exclusiveMinimum": 0},
+        "context_m": {"type": "number", "minimum": 0},
+        "score_context": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "evaluation_modes": {"type": "object", "minProperties": 1},
+    "evidence_levels": {
+      "type": "array",
+      "items": {"enum": ["observed", "photo_interpreted", "rule_inferred", "unsupported"]},
+      "minItems": 4,
+      "uniqueItems": true
+    },
+    "primary_metrics": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
+    "statistics": {"type": "object", "required": ["primary_unit", "secondary_unit", "confidence_interval"]}
+  },
+  "additionalProperties": true
+}

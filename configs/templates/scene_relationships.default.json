@@ -1,0 +1,33 @@
+{
+  "schema_version": "railway.scene-relationships-config.v1",
+  "scope": {
+    "chainage_min_m": -100.0,
+    "chainage_max_m": 100.0
+  },
+  "selectors": {
+    "platform_asset_id": "PlatformSurfaceContinuous",
+    "column_type": "CanopySupportNode",
+    "column_id_regex": "^CanopyColumn_(west|east)_(\\d+)$",
+    "cross_beam_id_template": "CanopyCrossBeam_{index}_v40",
+    "cross_beam_type": "CanopyCrossBeam",
+    "roof_type": "CanopyRoofPlane",
+    "longitudinal_beam_type": "CanopyLongitudinalBeam",
+    "stair_type": "VerticalCirculationFlight",
+    "visible_stair_id_prefix": "PlatformAccessVisibleFlight_",
+    "stair_guard_prefix": "PlatformStairOpeningGuard_",
+    "enclosure_type": "VerticalCirculationEnclosure"
+  },
+  "thresholds_m": {
+    "column_platform_maximum_gap": 0.05,
+    "column_platform_maximum_penetration": 0.25,
+    "column_beam_maximum_gap": 0.05,
+    "column_beam_maximum_penetration": 0.25,
+    "beam_roof_p90_maximum_gap": 0.08,
+    "beam_roof_maximum_penetration": 0.30,
+    "beam_roof_minimum_sample_coverage": 0.75,
+    "stair_platform_surface_distance": 0.05,
+    "stair_guard_surface_distance": 0.08,
+    "enclosure_platform_surface_distance": 0.10,
+    "enclosure_roof_interval_gap": 0.05
+  }
+}

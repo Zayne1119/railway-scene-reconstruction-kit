@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/railway-benchmark-evaluation-input-v1.json",
+  "type": "object",
+  "required": ["schema_version", "evaluation_id", "experiment_id", "assets", "ground_truth_relations", "predicted_relations", "distance_sets", "human_review"],
+  "properties": {
+    "schema_version": {"const": "railway.benchmark.evaluation-input.v1"},
+    "evaluation_id": {"type": "string", "minLength": 3},
+    "experiment_id": {"type": "string", "minLength": 3},
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "evaluable", "ground_truth", "prediction"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "evaluable": {"type": "boolean"},
+          "ground_truth": {
+            "type": "object",
+            "required": ["existence", "type"],
+            "properties": {
+              "existence": {"enum": ["present", "absent", "unknown"]},
+              "type": {"type": ["string", "null"]}
+            }
+          },
+          "prediction": {
+            "type": "object",
+            "required": ["existence", "type", "confidence", "evidence_level"],
+            "properties": {
+              "existence": {"enum": ["present", "absent"]},
+              "type": {"type": ["string", "null"]},
+              "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+              "evidence_level": {"enum": ["observed", "photo_interpreted", "rule_inferred", "unsupported"]}
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "ground_truth_relations": {"type": "array", "items": {"$ref": "#/$defs/relation"}},
+    "predicted_relations": {"type": "array", "items": {"$ref": "#/$defs/relation"}},
+    "distance_sets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "reference_to_model_m", "model_to_reference_m", "thresholds_m"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "reference_to_model_m": {"type": "array", "items": {"type": "number", "minimum": 0}},
+          "model_to_reference_m": {"type": "array", "items": {"type": "number", "minimum": 0}},
+          "thresholds_m": {"type": "array", "items": {"type": "number", "exclusiveMinimum": 0}, "uniqueItems": true}
+        }
+      }
+    },
+    "human_review": {
+      "type": "object",
+      "required": ["corridor_length_m", "events"],
+      "properties": {
+        "corridor_length_m": {"type": "number", "minimum": 0},
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["duration_seconds", "error_found"],
+            "properties": {
+              "duration_seconds": {"type": "number", "minimum": 0},
+              "error_found": {"type": "boolean"}
+            }
+          }
+        }
+      }
+    },
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "relation": {
+      "type": "object",
+      "required": ["type", "from", "to"],
+      "properties": {
+        "type": {"type": "string"},
+        "from": {"type": "string"},
+        "to": {"type": "string"}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

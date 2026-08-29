@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import csv
 import math
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
-
 
 REQUIRED_COLUMNS = ("index", "timestamp", "file", "x", "y", "z")
 
@@ -67,10 +67,8 @@ def audit_camera_rows(rows: list[dict[str, str]]) -> dict[str, Any]:
     return {
         "row_count": len(rows),
         "trajectory_length_m": trajectory[-1]["distance_m"],
-        "indexes_strictly_increasing": all(b > a for a, b in zip(indexes, indexes[1:])),
-        "timestamps_strictly_increasing": all(
-            b > a for a, b in zip(timestamps, timestamps[1:])
-        ),
+        "indexes_strictly_increasing": all(b > a for a, b in pairwise(indexes)),
+        "timestamps_strictly_increasing": all(b > a for a, b in pairwise(timestamps)),
         "duplicate_index_count": len(indexes) - len(set(indexes)),
         "duplicate_file_count": len(files) - len(set(files)),
         "rotation_complete_count": sum(
@@ -80,4 +78,3 @@ def audit_camera_rows(rows: list[dict[str, str]]) -> dict[str, Any]:
         "first_index": indexes[0],
         "last_index": indexes[-1],
     }
-

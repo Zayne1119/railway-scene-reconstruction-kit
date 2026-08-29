@@ -1,0 +1,39 @@
+{
+  "schema_version": "railway.benchmark.protocol.v1",
+  "protocol_id": "paper-v1",
+  "title": "Evidence-aware railway reconstruction benchmark",
+  "spatial_split": {
+    "assignment": "unique_chainage",
+    "atomic_block_m": 25.0,
+    "evaluation_core_m": 50.0,
+    "context_m": 10.0,
+    "score_context": false
+  },
+  "evaluation_modes": {
+    "frozen_generalization": {
+      "allowed_adaptations": ["format", "units", "crs", "sensor_calibration"]
+    },
+    "calibration_assisted": {
+      "pilot_length_m": [20.0, 50.0]
+    }
+  },
+  "evidence_levels": [
+    "observed",
+    "photo_interpreted",
+    "rule_inferred",
+    "unsupported"
+  ],
+  "primary_metrics": [
+    "geometry.p90_m",
+    "instances.macro_f1",
+    "topology.relation_f1",
+    "evidence.unsupported_hallucination_rate",
+    "confidence.ece",
+    "human.minutes_per_100m"
+  ],
+  "statistics": {
+    "primary_unit": "scene",
+    "secondary_unit": "spatial_block",
+    "confidence_interval": "cluster_bootstrap_95"
+  }
+}

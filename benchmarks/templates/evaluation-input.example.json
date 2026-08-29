@@ -1,0 +1,30 @@
+{
+  "schema_version": "railway.benchmark.evaluation-input.v1",
+  "evaluation_id": "synthetic-evaluation-v1",
+  "experiment_id": "synthetic-full-auto-v1",
+  "assets": [
+    {
+      "id": "TRACK-001",
+      "evaluable": true,
+      "ground_truth": {"existence": "present", "type": "track"},
+      "prediction": {
+        "existence": "present",
+        "type": "track",
+        "confidence": 0.9,
+        "evidence_level": "observed"
+      }
+    }
+  ],
+  "ground_truth_relations": [],
+  "predicted_relations": [],
+  "distance_sets": [
+    {
+      "name": "track",
+      "reference_to_model_m": [0.01, 0.02, 0.03],
+      "model_to_reference_m": [0.01, 0.02, 0.04],
+      "thresholds_m": [0.02, 0.05]
+    }
+  ],
+  "human_review": {"corridor_length_m": 50.0, "events": []},
+  "limitations": ["Synthetic template values are not project results."]
+}

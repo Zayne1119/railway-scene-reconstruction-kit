@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/railway-benchmark-evaluation-input-v2.json",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "evaluation_id",
+    "experiment_id",
+    "matching",
+    "ground_truth_assets",
+    "predicted_assets",
+    "ground_truth_relations",
+    "predicted_relations",
+    "distance_sets",
+    "track_measurements",
+    "human_review"
+  ],
+  "properties": {
+    "schema_version": {"const": "railway.benchmark.evaluation-input.v2"},
+    "evaluation_id": {"type": "string", "minLength": 3},
+    "experiment_id": {"type": "string", "minLength": 3},
+    "matching": {
+      "type": "object",
+      "required": ["max_center_distance_m", "block_restricted"],
+      "properties": {
+        "max_center_distance_m": {"type": "number", "exclusiveMinimum": 0},
+        "block_restricted": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "ground_truth_assets": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/groundTruthAsset"}
+    },
+    "predicted_assets": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/predictedAsset"}
+    },
+    "ground_truth_relations": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/relation"}
+    },
+    "predicted_relations": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/relation"}
+    },
+    "distance_sets": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/distanceSet"}
+    },
+    "track_measurements": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/trackMeasurement"}
+    },
+    "human_review": {"$ref": "#/$defs/humanReview"},
+    "ignored_prediction_ids": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "point3": {
+      "type": "array",
+      "prefixItems": [{"type": "number"}, {"type": "number"}, {"type": "number"}],
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "groundTruthAsset": {
+      "type": "object",
+      "required": ["id", "type", "evaluable", "center_m", "block_id", "evidence_status"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "type": {"type": "string", "minLength": 1},
+        "evaluable": {"type": "boolean"},
+        "center_m": {"$ref": "#/$defs/point3"},
+        "block_id": {"type": "string", "minLength": 1},
+        "evidence_status": {"enum": ["supported", "unsupported", "unverifiable"]},
+        "geometry_reference": {"type": ["object", "null"]},
+        "limitations": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": true
+    },
+    "predictedAsset": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "center_m",
+        "block_id",
+        "risk_score",
+        "declared_evidence_level",
+        "independent_evidence_status",
+        "released"
+      ],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "type": {"type": "string", "minLength": 1},
+        "center_m": {"$ref": "#/$defs/point3"},
+        "block_id": {"type": "string", "minLength": 1},
+        "risk_score": {"type": "number", "minimum": 0, "maximum": 1},
+        "declared_evidence_level": {
+          "enum": ["observed", "photo_interpreted", "rule_inferred", "unsupported"]
+        },
+        "independent_evidence_status": {
+          "enum": ["supported", "confirmed_false", "unsupported", "unverifiable"]
+        },
+        "released": {"type": "boolean"},
+        "geometry_reference": {"type": ["object", "null"]}
+      },
+      "additionalProperties": true
+    },
+    "relation": {
+      "type": "object",
+      "required": ["type", "from", "to"],
+      "properties": {
+        "type": {"type": "string", "minLength": 1},
+        "from": {"type": "string", "minLength": 1},
+        "to": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "distanceSet": {
+      "type": "object",
+      "required": ["name", "reference_to_model_m", "model_to_reference_m", "thresholds_m"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "reference_to_model_m": {"type": "array", "items": {"type": "number", "minimum": 0}},
+        "model_to_reference_m": {"type": "array", "items": {"type": "number", "minimum": 0}},
+        "thresholds_m": {
+          "type": "array",
+          "items": {"type": "number", "exclusiveMinimum": 0},
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "trackMeasurement": {
+      "type": "object",
+      "required": ["name", "stage", "observed_gauge_m", "reference_gauge_m"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "stage": {"enum": ["raw_detection", "constrained_output"]},
+        "observed_gauge_m": {"type": "number", "exclusiveMinimum": 0},
+        "reference_gauge_m": {"type": "number", "exclusiveMinimum": 0},
+        "correction_m": {"type": "number"},
+        "tolerance_m": {"type": "number", "exclusiveMinimum": 0},
+        "block_id": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "humanReview": {
+      "type": "object",
+      "required": ["corridor_length_m", "events"],
+      "properties": {
+        "corridor_length_m": {"type": "number", "minimum": 0},
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["duration_seconds", "error_found"],
+            "properties": {
+              "duration_seconds": {"type": "number", "minimum": 0},
+              "error_found": {"type": "boolean"}
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

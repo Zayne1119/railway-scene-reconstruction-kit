@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "railway-scene-reconstruction-kit"
-version = "0.1.0"
+version = "0.2.0"
 description = "Reusable evidence-aware railway scene reconstruction workflow"
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
@@ -20,6 +20,9 @@ dependencies = [
 dev = [
   "pytest>=8,<9",
   "ruff>=0.6,<1",
+]
+baselines = [
+  "open3d>=0.19,<0.20",
 ]
 
 [project.scripts]
@@ -38,4 +41,3 @@ addopts = "-q"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-

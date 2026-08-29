@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/railway-benchmark-experiment-v1.json",
+  "type": "object",
+  "required": ["schema_version", "experiment_id", "protocol_id", "dataset_id", "split_id", "ground_truth_id", "method_id", "variant_id", "execution_mode", "status", "command", "parameters", "random_seeds", "locked_before_test"],
+  "properties": {
+    "schema_version": {"const": "railway.benchmark.experiment.v1"},
+    "experiment_id": {"type": "string", "minLength": 3},
+    "protocol_id": {"type": "string", "minLength": 3},
+    "dataset_id": {"type": "string", "minLength": 3},
+    "split_id": {"type": "string", "minLength": 3},
+    "ground_truth_id": {"type": "string", "minLength": 3},
+    "method_id": {"type": "string", "minLength": 1},
+    "variant_id": {"type": "string", "minLength": 1},
+    "execution_mode": {"enum": ["auto", "HITL"]},
+    "status": {"enum": ["planned", "locked", "running", "completed", "failed"]},
+    "command": {"type": "array", "items": {"type": "string"}},
+    "parameters": {"type": "object"},
+    "random_seeds": {"type": "array", "items": {"type": "integer"}},
+    "locked_before_test": {"type": "boolean"}
+  },
+  "additionalProperties": true
+}

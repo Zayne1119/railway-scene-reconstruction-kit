@@ -214,14 +214,30 @@ RGB 误差最小只代表候选假设。必须至少检查多个相机、钢轨�
 
 检查 `workspace/reports/` 中的候选 JSON 和诊断图，确认钢轨配对、接触网/雨棚柱候选与高空线性候选。若高度分位区间或覆盖阈值不合适，应修改项目目录中的算法配置并记录原因，不得把现场阈值写回公共源码。
 
-钢轨候选经人工确认后可生成第一版参数化轨道：
+单段 `build-track` 只用于 Pilot 观察，不得直接拼成全线模型。推荐先生成哈希绑定的独立复核包：
 
 ```powershell
-railway-recon build-track --project projects/sample_line/project.json --segment <segment-id>
+railway-recon track-review-create `
+  --project projects/sample_line/project.json `
+  --source <segment-id>=<rail-candidate-report.json>
+
+railway-recon track-review-apply `
+  --project projects/sample_line/project.json `
+  --path projects/sample_line/workspace/reports/track_graph_rail_review_v1
+```
+
+复核通过后，用 reviewed 报告构建全局 TrackGraph；只有审计为 `pass` 才能生成连续钢轨、全局相位轨枕和道床：
+
+```powershell
+railway-recon track-graph-build `
+  --project projects/sample_line/project.json `
+  --source <segment-id>=<reviewed-rail-report.json>
+
+railway-recon build-track-graph-mesh --project projects/sample_line/project.json
 railway-recon registry-check --project projects/sample_line/project.json
 ```
 
-输出的 OBJ 是 Pilot 基线，不代表轨道已完成。仍需复核轨距、轨顶高程、段界、道岔、轨枕方向、道床肩部和点—模型误差。之后的推荐顺序是：相机投影与照片证据 → 竖直构件语义分类 → 接触网 → 站台/雨棚/可见立面 → 缺口闭环 → Mesh 清理和 Web/Blender/UE 验收。
+输出的 OBJ 仍是候选模型，不代表轨道已完成。仍需复核轨距、钢轨中心距、轨顶高程、段界、道岔、轨枕方向、道床肩部和点—模型误差。之后的推荐顺序是：相机投影与照片证据 → 竖直构件语义分类 → 接触网 → 站台/雨棚/可见立面 → 缺口闭环 → Mesh 清理和 Web/Blender/UE 验收。
 
 对于已经由点云/照片和人工复核确定的站台、柱、梁、屋面段、立面板或线缆，可以按照 `examples/minimal_project/reviewed_scene.example.json` 建立布局并生成统一 OBJ：
 

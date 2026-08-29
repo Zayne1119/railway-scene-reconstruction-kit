@@ -1,0 +1,16 @@
+{
+  "schema_version": "railway.benchmark.ground-truth.v1",
+  "ground_truth_id": "synthetic-gt-v1",
+  "dataset_id": "synthetic-railway",
+  "split_id": "synthetic-development-v1",
+  "truth_level": "GT-L1_observed_consensus",
+  "status": "draft",
+  "instances": [],
+  "relations": [],
+  "exclusion_regions": [],
+  "annotation": {
+    "blind_to_final_model": true,
+    "double_annotation_fraction": 0.2,
+    "adjudication_required": true
+  }
+}

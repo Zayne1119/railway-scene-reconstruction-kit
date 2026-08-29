@@ -1,0 +1,10 @@
+{
+  "schema_version": "railway.benchmark.metric-report.v1",
+  "report_id": "synthetic-report-v1",
+  "experiment_id": "synthetic-full-auto-v1",
+  "evaluator_version": "paper-v1",
+  "generated_at": "2026-08-26T00:00:00+00:00",
+  "metrics": {},
+  "sample_counts": {"scene": 1, "spatial_block": 1},
+  "limitations": ["Template only; values are intentionally empty."]
+}
