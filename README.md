@@ -8,6 +8,7 @@
 > *An evidence-aware pipeline for traceable railway scene reconstruction.*
 
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![CI](https://github.com/Zayne1119/railway-scene-reconstruction-kit/actions/workflows/ci.yml/badge.svg)
 ![Status](https://img.shields.io/badge/status-toolkit%20v0.2-9ACD32)
 ![Viewer](https://img.shields.io/badge/Web-Three.js-111111?logo=threedotjs)
 ![Interchange](https://img.shields.io/badge/GLB%20%7C%20FBX%20%7C%20OBJ-ready-8A5CF5)
@@ -16,6 +17,24 @@
 
 > [!IMPORTANT]
 > 仓库只包含通用代码、合成示例、示意封面和脱敏文档；不包含客户点云、现场全景、精确坐标、设备台账、生产模型或历史中间版本。默认使用 GitHub 私有仓库。
+
+## 45 秒看懂
+
+<p align="center">
+  <a href="https://github.com/Zayne1119/railway-scene-reconstruction-kit/releases/download/v0.2.0/railway-scene-reconstruction-kit-v0.2.0-showcase.mp4">
+    <img src="docs/media/hero-preview.gif" alt="点式观测经过 TrackGraph、结构化重建和质量门禁后交付至 Web、Blender 与 UE" width="80%">
+  </a>
+</p>
+
+上图和完整演示视频均为**合成概念示意**，不使用生产点云、现场影像、精确坐标或客户模型。点击动图可播放 `v0.2.0` Release 中的 36 秒 MP4。
+
+<p align="center">
+  <img src="docs/media/showcase-input-output.png" alt="铁路场景重建工具包的输入与输出示意" width="100%">
+</p>
+
+| 输入 | 关键处理 | 输出 |
+|---|---|---|
+| LAS/LAZ 点式观测、相机轨迹、经授权全景 | 输入审计、分段、候选、照片证据、TrackGraph、参数化重建、质量门禁 | 资产注册表、QA 报告、GLB/FBX/OBJ、Web/Blender/UE 交付 |
 
 ## 为什么需要这套方法
 
@@ -94,6 +113,20 @@ flowchart LR
 - 配置驱动的 Three.js GLB 查看与资产查询页面；
 - GitHub Actions、合成端到端测试和发布前敏感信息扫描。
 
+## 当前可复现状态
+
+以下结果来自 `2026-08-29` 的干净工作区，只针对公开代码与合成数据，不代表任何真实铁路项目的绝对精度：
+
+| 检查项 | 当前结果 |
+|---|---:|
+| Python 单元测试 | 107 / 107 通过 |
+| Web 查看器自动测试 | 3 / 3 通过 |
+| 合成端到端 Smoke Test | 1 / 1 通过 |
+| 合成轨道输出 | 1 对钢轨、5 个资产、3,704 faces / 7,448 triangles |
+| 发布前敏感信息扫描 | 0 findings |
+
+真实项目必须重新执行输入审计、参数适配、人工复核和独立精度评估；上述数字不能直接外推到新线路。
+
 ## 脱敏案例：约 200 m 站场重点区
 
 该案例验证了从小样段到完整重点区的生产方法，涉及多股道、站台、雨棚、接触网、楼梯、电梯、可见立面、低置信背面、资产查询和 Mesh 清理。
@@ -138,11 +171,12 @@ railway-recon safety-check --root .
 - **UE**：单位、轴向、材质、细线、LOD/Nanite 和碰撞验收；
 - **交换格式**：保持 GLB / FBX / OBJ 与资产注册表的一致身份。
 
-## 演示视频怎么放
+## 演示与发布素材
 
-README 内最稳妥的方式是内嵌一个 6–10 秒、低体积的 GIF/动态图，点击后打开 GitHub Release 中的完整 MP4。完整视频不写入普通 Git 历史。
-
-现有纯模型飞行视频可用于**已授权的私有仓库**。仓库若公开，必须先确认客户对衍生模型画面的公开授权；原始全景、点云空间布局、精确指标和带站名证据图不得作为宣传素材。
+- README 内嵌 6 秒、3.4 MB 的隐私安全 GIF；
+- [v0.2.0 Release](https://github.com/Zayne1119/railway-scene-reconstruction-kit/releases/tag/v0.2.0) 提供 36 秒 H.264 MP4；
+- 图片和视频由同一张合成概念封面生成，不读取项目数据目录；
+- 完整 MP4 不进入普通 Git 历史，避免仓库膨胀。
 
 [查看 GitHub 宣传页与视频发布指南](docs/GITHUB_SHOWCASE_CN.md)
 
@@ -164,6 +198,18 @@ README 内最稳妥的方式是内嵌一个 6–10 秒、低体积的 GIF/动态
 当前 `v0.2.0` 是可复用生产基础工具包，不是一键生成完整车站的黑盒产品。当前自动化边界是“已验收几何到质量门禁与交付”；原始点云、全景和相机数据到已验收几何仍需要项目参数适配与人工复核。构件级照片证据包、竖直构件自动语义、完整接触网、站台—雨棚—立面自动拟合和跨段资产化 GLB 仍在产品化路线中。
 
 没有 CRS、垂直基准和独立控制点时，只能报告模型相对于当前点式观测的**内部拟合精度**，不能声明绝对测量精度。
+
+## 公开版与内部完整工程
+
+| 公开/交接工具包 | 内部完整工程（不上传） |
+|---|---|
+| 通用 Python/Blender/Web 代码 | 客户原始点云、高斯点和现场全景 |
+| JSON Schema、配置模板和合成数据合同 | 精确坐标、CRS、控制点和相机轨迹 |
+| TrackGraph、质量门禁和 Mesh QA | 生产 GLB/FBX/OBJ、纹理和历史模型版本 |
+| 合成测试、基准模板和公开文档 | 项目阈值、设备台账、内部复核记录和精度报告 |
+| 合成概念图片、GIF 和 Release 视频 | 能识别真实站场布局、站名或设备编号的画面 |
+
+公开仓库用于复用方法和验证代码；内部工程保存项目证据与正式成果。两者通过数据合同连接，不通过复制整个项目目录交接。
 
 ## 协作与数据安全
 

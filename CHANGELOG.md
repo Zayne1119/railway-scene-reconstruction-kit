@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added a privacy-safe synthetic GitHub showcase GIF, input/output visual and reproducible 36-second Release video generator.
+- Expanded the repository landing page with verified public-code checks and an explicit public-toolkit versus private-project boundary.
+
 ## 0.2.0 - 2026-08-29
 
 - Added trajectory-relative rail-height windows and adaptive 5/10/50 m segmentation for long corridors with changing camera elevation and complex topology.

@@ -27,6 +27,8 @@ docs/media/
 
 当前封面是概念示意图，不作为测量成果或模型精度证据。
 
+`hero-preview.gif` 和 `showcase-input-output.png` 由 `scripts/build_showcase_media.py` 从该概念封面生成。脚本不读取 `projects/`、`data/`、`deliverables/` 或任何生产模型。完整 MP4 输出到仓库外并作为 Release 资产上传。
+
 ## 3. 视频推荐方案
 
 ### README 内
@@ -59,6 +61,15 @@ docs/media/
 3. 在 Release 说明中写明视频版本、模型版本和授权范围；
 4. 把 README 动图链接更新为 Release 资产 URL；
 5. 不把完整 MP4 提交到普通 Git 历史。
+
+当前 `v0.2.0` 使用以下命令生成 36 秒合成演示视频：
+
+```powershell
+python scripts/build_showcase_media.py `
+  --mp4 ..\release-assets\railway-scene-reconstruction-kit-v0.2.0-showcase.mp4
+```
+
+该视频只展示方法概念，不是现场成果或精度证据。
 
 ## 4. 私有与公开仓库的素材边界
 
