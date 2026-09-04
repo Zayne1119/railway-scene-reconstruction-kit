@@ -25,34 +25,61 @@ from .benchmark import (
     validate_benchmark_root,
 )
 from .benchmark_metrics import evaluate_benchmark_file
+from .canopy_photo_evidence import analyze_canopy_photo_evidence
+from .canopy_structure import analyze_canopy_structure
+from .catenary_candidate_mesh import (
+    audit_catenary_candidate_section,
+    audit_catenary_track_clearance_files,
+    build_catenary_candidate_mesh,
+)
 from .config import initialize_project, load_project, validate_project_value
+from .corridor_canopy_candidate import build_corridor_canopy_candidate
+from .corridor_catenary_pipeline import run_corridor_catenary_pipeline
+from .corridor_column_grid import recover_corridor_column_grid
+from .corridor_column_support import validate_corridor_column_grid
+from .corridor_conductor_pipeline import run_corridor_conductor_pipeline
 from .defect_injection import evaluate_defect_injection
 from .experiment_lock import lock_benchmark_experiment
+from .fixed_view_auto_review import write_fixed_view_auto_review
+from .full_corridor import STAGE_ORDER, build_full_corridor_plan, run_full_corridor
 from .gislab_baseline import (
     normalize_gislab_railtrack_points,
     prepare_gislab_railtrack_input,
     record_gislab_no_detection,
     record_gislab_timeout,
 )
+from .global_scene_candidate_pipeline import run_global_scene_candidate_pipeline
 from .holdout_bootstrap import bootstrap_rail_holdout_comparison
 from .holdout_comparison import compare_rail_holdout_reports
 from .io import load_json
 from .manifest import write_run_manifest
+from .mesh_assembly import assemble_candidate_meshes, parse_mesh_source_specs
 from .mesh_audit import audit_obj
+from .mesh_object_registry import build_mesh_object_registry
+from .mesh_seam_reconciliation import reconcile_mesh_seams
+from .multi_source import prepare_input_sources
 from .open3d_baseline import detect_open3d_rail_baseline
+from .opposite_platform_reconstruction import reconstruct_opposite_platform
+from .platform_candidate_gate import evaluate_platform_candidate_gate
+from .platform_gap_point_evidence import analyze_platform_gap_point_evidence
+from .platform_interface_audit import audit_platform_interfaces
+from .platform_mesh import build_platform_mesh
+from .platform_photo_evidence import analyze_platform_photo_evidence
+from .platform_surface import analyze_platform_surface
 from .point_holdout import (
     split_existing_point_cloud_holdout,
     split_point_cloud_holdout,
     validate_point_cloud_holdout,
 )
 from .prediction_lock import lock_vertical_predictions
-from .projection import calibrate_projection
+from .projection import calibrate_projection, calibrate_projection_consensus
 from .qa import quality_report
 from .quality_gate import evaluate_quality_gate, validate_gate_result
 from .rail_comparison_figure import render_rail_method_comparison
 from .rail_holdout_metrics import evaluate_rail_holdout
 from .rail_pair_curation import curate_rail_pairs
 from .rail_production_regression import audit_rail_production_regression
+from .rail_recovery_selection import select_corridor_rail_recoveries
 from .rail_review import (
     apply_rail_owner_override,
     apply_rail_review_package,
@@ -67,6 +94,7 @@ from .rail_truth_tasks import (
     create_rail_truth_annotation_package,
     validate_rail_truth_annotation_package,
 )
+from .rapid_candidate_audit import write_rapid_candidate_audit
 from .recovery_binding import bind_targeted_recovery_to_scene
 from .registry import (
     freeze_release_registry,
@@ -78,11 +106,35 @@ from .registry import (
 from .release import build_web_acceptance_config
 from .review_agreement import compare_vertical_reviews
 from .safety import safety_check
-from .segments import crop_segments, plan_segments
+from .seam_evidence import compare_seam_rail_reports
+from .segment_mesh_ownership import (
+    audit_owned_mesh_seams,
+    build_segment_ownership_plan,
+    clip_segment_mesh_ownership,
+)
+from .segments import crop_segment_context_sources, crop_segments, plan_segments
+from .side_asset_pipeline import run_side_asset_pipeline
+from .small_asset_candidates import analyze_small_platform_asset_candidates
+from .small_asset_photo_evidence import analyze_small_asset_photo_evidence
+from .station_platform_pipeline import run_station_platform_pipeline
+from .support_relationship_gate import (
+    SupportRelationshipPolicy,
+    validate_support_relationship_patch,
+)
+from .targeted_canopy_integration import integrate_targeted_canopy_candidate
+from .targeted_canopy_recovery import (
+    recover_targeted_canopy,
+    targeted_canopy_photo_evidence,
+)
 from .topology_ablation import evaluate_topology_ablation
 from .track_graph import build_track_graph, validate_track_graph
+from .vertical_conflict_photo_evidence import (
+    analyze_selected_vertical_photo_evidence,
+    analyze_vertical_conflict_photo_evidence,
+)
 from .vertical_fit_selection import select_rail_vertical_fit
 from .vertical_followup import audit_rail_vertical_followup
+from .vertical_hypotheses import analyze_vertical_hypotheses
 
 
 def _print(value: Any) -> None:
@@ -113,14 +165,29 @@ def _assignments(values: list[str], option: str) -> list[tuple[str, str]]:
     return result
 
 
+def _projection_samples(values: list[str]) -> list[tuple[str, int]]:
+    result: list[tuple[str, int]] = []
+    for value in values:
+        if "=" not in value:
+            raise ValueError(f"Invalid --sample {value!r}; expected SEGMENT=CAMERA_INDEX")
+        segment_id, camera_index = value.split("=", 1)
+        if not segment_id or not camera_index:
+            raise ValueError(f"Invalid --sample {value!r}; expected SEGMENT=CAMERA_INDEX")
+        try:
+            result.append((segment_id, int(camera_index)))
+        except ValueError as exc:
+            raise ValueError(
+                f"Invalid --sample {value!r}; camera index must be an integer"
+            ) from exc
+    return result
+
+
 def _vertical_fit_variants(values: list[str]) -> list[tuple[str, str, str]]:
     result: list[tuple[str, str, str]] = []
     for value in values:
         parts = value.split("=", 2)
         if len(parts) != 3 or not all(parts):
-            raise ValueError(
-                f"Invalid --variant {value!r}; expected NAME=EVALUATION=SETTINGS"
-            )
+            raise ValueError(f"Invalid --variant {value!r}; expected NAME=EVALUATION=SETTINGS")
         result.append((parts[0], parts[1], parts[2]))
     return result
 
@@ -177,6 +244,14 @@ def build_parser() -> argparse.ArgumentParser:
     audit.add_argument("--project", required=True)
     audit.add_argument("--full-hash", action="store_true")
 
+    prepare_inputs = commands.add_parser(
+        "prepare-inputs",
+        help="Prepare camera coverage and ownership for one or more point-cloud sources",
+    )
+    prepare_inputs.add_argument("--project", required=True)
+    prepare_inputs.add_argument("--full-hash", action="store_true")
+    prepare_inputs.add_argument("--camera-bbox-margin-m", type=float, default=0.0)
+
     plan = commands.add_parser("plan-segments", help="Plan corridor segments from camera poses")
     plan.add_argument("--project", required=True)
 
@@ -184,6 +259,52 @@ def build_parser() -> argparse.ArgumentParser:
     segment.add_argument("--project", required=True)
     segment.add_argument("--ids", nargs="*")
     segment.add_argument("--overwrite", action="store_true")
+
+    segment_context = commands.add_parser(
+        "segment-context",
+        help="Crop one identical seam envelope from every declared context LAZ",
+    )
+    segment_context.add_argument("--project", required=True)
+    segment_context.add_argument("--segment", required=True)
+    segment_context.add_argument("--overwrite", action="store_true")
+
+    full_corridor_plan = commands.add_parser(
+        "full-corridor-plan",
+        help="Build a resumable coverage-first plan and risk-ranked review queue",
+    )
+    full_corridor_plan.add_argument("--project", required=True)
+
+    full_corridor_run = commands.add_parser(
+        "full-corridor-run",
+        help="Run the automatic full-corridor first pass with checkpointed failure isolation",
+    )
+    full_corridor_run.add_argument("--project", required=True)
+    full_corridor_run.add_argument("--through", choices=STAGE_ORDER, default="canopy")
+    full_corridor_run.add_argument(
+        "--fail-fast",
+        action="store_true",
+        help="Stop at the first segment failure instead of completing unaffected segments",
+    )
+
+    global_scene_candidate = commands.add_parser(
+        "run-global-scene-candidate",
+        help="Run track, catenary, conductor and optional station assembly as one fail-closed candidate stage",
+    )
+    global_scene_candidate.add_argument("--project", required=True)
+    global_scene_candidate.add_argument("--track-graph", required=True)
+    global_scene_candidate.add_argument("--track-graph-audit", required=True)
+    global_scene_candidate.add_argument("--station-assets-obj")
+    global_scene_candidate.add_argument(
+        "--include-inferred-track-gaps",
+        action="store_true",
+        help="Add a separate orange candidate layer across bounded rail-evidence gaps",
+    )
+    global_scene_candidate.add_argument(
+        "--maximum-inferred-track-gap-m", type=float, default=250.0
+    )
+    global_scene_candidate.add_argument("--output-root", required=True)
+    global_scene_candidate.add_argument("--output-name", required=True)
+    global_scene_candidate.add_argument("--overwrite", action="store_true")
 
     detect_rails = commands.add_parser(
         "detect-rails", help="Extract baseline rail candidates from a pilot segment"
@@ -203,6 +324,403 @@ def build_parser() -> argparse.ArgumentParser:
     detect_linear.add_argument("--project", required=True)
     detect_linear.add_argument("--segment", required=True)
     detect_linear.add_argument("--overwrite", action="store_true")
+
+    classify_vertical = commands.add_parser(
+        "classify-vertical",
+        help="Merge and score vertical candidates without writing reviewed assets",
+    )
+    classify_vertical.add_argument("--project", required=True)
+    classify_vertical.add_argument("--segment", required=True)
+    classify_vertical.add_argument("--linear-report")
+    classify_vertical.add_argument("--rail-report")
+    classify_vertical.add_argument("--settings")
+    classify_vertical.add_argument("--overwrite", action="store_true")
+
+    analyze_canopy = commands.add_parser(
+        "analyze-canopy",
+        help="Extract column-seeded roof surfaces and audit candidate contacts",
+    )
+    analyze_canopy.add_argument("--project", required=True)
+    analyze_canopy.add_argument("--segment", required=True)
+    analyze_canopy.add_argument("--vertical-report")
+    analyze_canopy.add_argument("--settings")
+    analyze_canopy.add_argument("--overwrite", action="store_true")
+
+    canopy_photo = commands.add_parser(
+        "canopy-photo-evidence",
+        help="Project canopy column tops into calibrated panoramas and score directional edges",
+    )
+    canopy_photo.add_argument("--project", required=True)
+    canopy_photo.add_argument("--segment", required=True)
+    canopy_photo.add_argument("--projection-consensus", required=True)
+    canopy_photo.add_argument("--canopy-report")
+    canopy_photo.add_argument("--vertical-report")
+    canopy_photo.add_argument("--settings")
+    canopy_photo.add_argument("--overwrite", action="store_true")
+
+    analyze_platform = commands.add_parser(
+        "analyze-platform",
+        help="Extract observed platform-top components and segmented boundary/elevation fits",
+    )
+    analyze_platform.add_argument("--project", required=True)
+    analyze_platform.add_argument("--segment", required=True)
+    analyze_platform.add_argument("--vertical-report")
+    analyze_platform.add_argument("--settings")
+    analyze_platform.add_argument("--overwrite", action="store_true")
+
+    platform_photo = commands.add_parser(
+        "platform-photo-evidence",
+        help="Project platform edges and safety-line probes into calibrated panoramas",
+    )
+    platform_photo.add_argument("--project", required=True)
+    platform_photo.add_argument("--segment", required=True)
+    platform_photo.add_argument("--projection-consensus", required=True)
+    platform_photo.add_argument("--platform-report")
+    platform_photo.add_argument("--settings")
+    platform_photo.add_argument("--overwrite", action="store_true")
+
+    platform_mesh = commands.add_parser(
+        "build-platform-mesh",
+        help="Build a continuous candidate platform mesh after a passed gap review gate",
+    )
+    platform_mesh.add_argument("--project", required=True)
+    platform_mesh.add_argument("--segment", required=True)
+    platform_mesh.add_argument("--mesh-gate", required=True)
+    platform_mesh.add_argument("--platform-report")
+    platform_mesh.add_argument("--settings")
+    platform_mesh.add_argument("--overwrite", action="store_true")
+
+    platform_candidate_gate = commands.add_parser(
+        "create-platform-candidate-gate",
+        help="Authorize candidate-only platform mesh when deterministic gap and fit QA pass",
+    )
+    platform_candidate_gate.add_argument("--project", required=True)
+    platform_candidate_gate.add_argument("--segment", required=True)
+    platform_candidate_gate.add_argument("--platform-report", required=True)
+    platform_candidate_gate.add_argument("--output", required=True)
+    platform_candidate_gate.add_argument("--component-id")
+    platform_candidate_gate.add_argument("--ownership-plan")
+    platform_candidate_gate.add_argument("--gap-point-evidence")
+    platform_candidate_gate.add_argument("--overwrite", action="store_true")
+
+    platform_gap_points = commands.add_parser(
+        "analyze-platform-gap-points",
+        help="Classify platform surface gaps from above/below-surface point evidence",
+    )
+    platform_gap_points.add_argument("--project", required=True)
+    platform_gap_points.add_argument("--segment", required=True)
+    platform_gap_points.add_argument("--platform-report", required=True)
+    platform_gap_points.add_argument("--output", required=True)
+    platform_gap_points.add_argument("--settings")
+    platform_gap_points.add_argument("--overwrite", action="store_true")
+
+    platform_interfaces = commands.add_parser(
+        "audit-platform-interfaces",
+        help="Audit platform contacts and conflicts with rails, verticals and canopy evidence",
+    )
+    platform_interfaces.add_argument("--project", required=True)
+    platform_interfaces.add_argument("--segment", required=True)
+    platform_interfaces.add_argument("--mesh-build-report")
+    platform_interfaces.add_argument("--platform-report")
+    platform_interfaces.add_argument("--vertical-report")
+    platform_interfaces.add_argument("--canopy-report")
+    platform_interfaces.add_argument("--settings")
+    platform_interfaces.add_argument("--overwrite", action="store_true")
+
+    opposite_platform = commands.add_parser(
+        "reconstruct-opposite-platform",
+        help="Run a multi-density gate and build one conservative opposite platform",
+    )
+    opposite_platform.add_argument("--project", required=True)
+    opposite_platform.add_argument("--segment", required=True)
+    opposite_platform.add_argument("--point-cloud", required=True)
+    opposite_platform.add_argument("--vertical-report", required=True)
+    opposite_platform.add_argument("--output-dir", required=True)
+    opposite_platform.add_argument("--side", choices=("left", "right"), required=True)
+    opposite_platform.add_argument("--minimum-longitudinal-m", type=float)
+    opposite_platform.add_argument("--maximum-longitudinal-m", type=float)
+    opposite_platform.add_argument(
+        "--ownership-plan",
+        help="Preferred for adjacent segments; derives this segment's local owned interval",
+    )
+    opposite_platform.add_argument("--settings")
+    opposite_platform.add_argument("--overwrite", action="store_true")
+
+    vertical_conflict_photo = commands.add_parser(
+        "vertical-conflict-photo-evidence",
+        help="Project platform-contacting semantic conflicts into calibrated panoramas",
+    )
+    vertical_conflict_photo.add_argument("--project", required=True)
+    vertical_conflict_photo.add_argument("--segment", required=True)
+    vertical_conflict_photo.add_argument("--projection-consensus", required=True)
+    vertical_conflict_photo.add_argument("--interface-report")
+    vertical_conflict_photo.add_argument("--vertical-report")
+    vertical_conflict_photo.add_argument("--settings")
+    vertical_conflict_photo.add_argument("--overwrite", action="store_true")
+
+    selected_vertical_photo = commands.add_parser(
+        "vertical-candidate-photo-evidence",
+        help="Project explicitly selected vertical hypotheses into calibrated panoramas",
+    )
+    selected_vertical_photo.add_argument("--project", required=True)
+    selected_vertical_photo.add_argument("--segment", required=True)
+    selected_vertical_photo.add_argument("--candidate", action="append", required=True)
+    selected_vertical_photo.add_argument("--projection-consensus", required=True)
+    selected_vertical_photo.add_argument("--output-name", required=True)
+    selected_vertical_photo.add_argument("--vertical-report")
+    selected_vertical_photo.add_argument("--settings")
+    selected_vertical_photo.add_argument("--overwrite", action="store_true")
+
+    catenary_section = commands.add_parser(
+        "catenary-section-audit",
+        help="Fit a robust local section to one photo-reviewable catenary candidate",
+    )
+    catenary_section.add_argument("--project", required=True)
+    catenary_section.add_argument("--segment", required=True)
+    catenary_section.add_argument("--candidate", required=True)
+    catenary_section.add_argument("--vertical-report")
+    catenary_section.add_argument("--output")
+    catenary_section.add_argument("--overwrite", action="store_true")
+
+    catenary_mesh = commands.add_parser(
+        "catenary-candidate-mesh",
+        help="Build an evidence-reviewed catenary mast and foundation candidate",
+    )
+    catenary_mesh.add_argument("--project", required=True)
+    catenary_mesh.add_argument("--vertical-report", required=True)
+    catenary_mesh.add_argument("--semantic-review", required=True)
+    catenary_mesh.add_argument("--section-audit", required=True)
+    catenary_mesh.add_argument("--output-dir", required=True)
+    catenary_mesh.add_argument("--report-dir", required=True)
+    catenary_mesh.add_argument("--overwrite", action="store_true")
+
+    corridor_catenary = commands.add_parser(
+        "run-corridor-catenary-pipeline",
+        help="Deduplicate corridor verticals and build only periodic point-supported mast candidates",
+    )
+    corridor_catenary.add_argument("--project", required=True)
+    corridor_catenary.add_argument("--output-dir", required=True)
+    corridor_catenary.add_argument("--output-name", required=True)
+    corridor_catenary.add_argument("--settings")
+    corridor_catenary.add_argument("--overwrite", action="store_true")
+
+    corridor_conductor = commands.add_parser(
+        "run-corridor-conductor-pipeline",
+        help="Bind cable fragments to recovered tracks by lateral offset and rail-top height",
+    )
+    corridor_conductor.add_argument("--project", required=True)
+    corridor_conductor.add_argument("--track-graph", required=True)
+    corridor_conductor.add_argument("--output-dir", required=True)
+    corridor_conductor.add_argument("--output-name", required=True)
+    corridor_conductor.add_argument("--settings")
+    corridor_conductor.add_argument("--overwrite", action="store_true")
+
+    catenary_clearance = commands.add_parser(
+        "catenary-track-clearance-audit",
+        help="Check a reviewed mast foundation envelope against track-bed envelopes",
+    )
+    catenary_clearance.add_argument("--project", required=True)
+    catenary_clearance.add_argument("--track-graph", required=True)
+    catenary_clearance.add_argument("--section-audit", required=True)
+    catenary_clearance.add_argument("--track-build", required=True)
+    catenary_clearance.add_argument("--output", required=True)
+    catenary_clearance.add_argument("--overwrite", action="store_true")
+
+    ownership_plan = commands.add_parser(
+        "build-segment-ownership-plan",
+        help="Build one shared midpoint ownership frame for adjacent segments",
+    )
+    ownership_plan.add_argument("--project", required=True)
+    ownership_plan.add_argument(
+        "--segment-frame",
+        required=True,
+        action="append",
+        help="Repeat as SEGMENT_ID=FRAME_REPORT_JSON",
+    )
+    ownership_plan.add_argument("--output", required=True)
+    ownership_plan.add_argument("--overwrite", action="store_true")
+
+    mesh_ownership = commands.add_parser(
+        "clip-segment-mesh-ownership",
+        help="Clip a buffered candidate mesh to one segment's owned longitudinal interval",
+    )
+    mesh_ownership.add_argument("--project", required=True)
+    mesh_ownership.add_argument("--source-obj", required=True)
+    mesh_ownership.add_argument("--source-origin", required=True)
+    mesh_ownership.add_argument("--frame-report", required=True)
+    mesh_ownership.add_argument("--output-dir", required=True)
+    mesh_ownership.add_argument("--minimum-longitudinal-m", required=True, type=float)
+    mesh_ownership.add_argument("--maximum-longitudinal-m", required=True, type=float)
+    mesh_ownership.add_argument("--overwrite", action="store_true")
+
+    seam_audit = commands.add_parser(
+        "audit-owned-mesh-seams",
+        help="Audit adjacent owned mesh cut edges in one shared corridor frame",
+    )
+    seam_audit.add_argument("--project", required=True)
+    seam_audit.add_argument("--ownership-plan", required=True)
+    seam_audit.add_argument(
+        "--segment-mesh",
+        required=True,
+        action="append",
+        help="Repeat as SEGMENT_ID=OWNED_OBJ",
+    )
+    seam_audit.add_argument("--output", required=True)
+    seam_audit.add_argument("--p90-max-m", required=True, type=float)
+    seam_audit.add_argument("--boundary-tolerance-m", type=float, default=0.002)
+    seam_audit.add_argument("--sample-spacing-m", type=float, default=0.02)
+    seam_audit.add_argument("--overwrite", action="store_true")
+
+    mesh_assembly = commands.add_parser(
+        "assemble-candidate-meshes",
+        help="Merge candidate OBJ components with source namespaces and mesh QA",
+    )
+    mesh_assembly.add_argument("--project", required=True)
+    mesh_assembly.add_argument("--source", required=True, action="append")
+    mesh_assembly.add_argument("--output-dir", required=True)
+    mesh_assembly.add_argument("--output-name", required=True)
+    mesh_assembly.add_argument("--overwrite", action="store_true")
+
+    station_platform = commands.add_parser(
+        "run-station-platform-pipeline",
+        help="Build, clip, seam-audit and assemble safe station platform segments",
+    )
+    station_platform.add_argument("--project", required=True)
+    station_platform.add_argument("--ownership-plan", required=True)
+    station_platform.add_argument("--segment", required=True, action="append")
+    station_platform.add_argument("--output-name", required=True)
+    station_platform.add_argument("--overwrite", action="store_true")
+
+    column_grid = commands.add_parser(
+        "recover-corridor-column-grid",
+        help="Fit one canopy-column grid phase across adjacent segment ownership ranges",
+    )
+    column_grid.add_argument("--project", required=True)
+    column_grid.add_argument("--ownership-plan", required=True)
+    column_grid.add_argument(
+        "--vertical-report",
+        action="append",
+        required=True,
+        help="Repeat as SEGMENT_ID=VERTICAL_HYPOTHESES_JSON",
+    )
+    column_grid.add_argument("--output", required=True)
+    column_grid.add_argument("--side", choices=("left", "right"), required=True)
+    column_grid.add_argument("--settings")
+    column_grid.add_argument("--overwrite", action="store_true")
+
+    corridor_canopy = commands.add_parser(
+        "build-corridor-canopy-candidate",
+        help="Build a roof-and-column candidate from a point-supported corridor grid",
+    )
+    corridor_canopy.add_argument("--project", required=True)
+    corridor_canopy.add_argument("--ownership-plan", required=True)
+    corridor_canopy.add_argument("--supported-grid", required=True)
+    corridor_canopy.add_argument("--output-name", required=True)
+    corridor_canopy.add_argument("--settings")
+    corridor_canopy.add_argument("--overwrite", action="store_true")
+
+    column_support = commands.add_parser(
+        "validate-corridor-column-grid",
+        help="Check every inferred corridor column position against local point support",
+    )
+    column_support.add_argument("--project", required=True)
+    column_support.add_argument("--grid", required=True)
+    column_support.add_argument("--output", required=True)
+    column_support.add_argument("--settings")
+    column_support.add_argument("--overwrite", action="store_true")
+
+    seam_reconcile = commands.add_parser(
+        "reconcile-mesh-seams",
+        help="Weld configured segment mesh endpoints and remove proven duplicate caps",
+    )
+    seam_reconcile.add_argument("--project", required=True)
+    seam_reconcile.add_argument("--source-obj", required=True)
+    seam_reconcile.add_argument("--source-origin", required=True)
+    seam_reconcile.add_argument("--frame-report", required=True)
+    seam_reconcile.add_argument("--settings", required=True)
+    seam_reconcile.add_argument("--output-dir", required=True)
+    seam_reconcile.add_argument("--registry")
+    seam_reconcile.add_argument("--overwrite", action="store_true")
+
+    side_asset_pipeline = commands.add_parser(
+        "run-side-asset-pipeline",
+        help="Run opposite-platform, corridor-column-grid and seam-repair stages from one plan",
+    )
+    side_asset_pipeline.add_argument("--project", required=True)
+    side_asset_pipeline.add_argument("--plan", required=True)
+    side_asset_pipeline.add_argument("--output", required=True)
+    side_asset_pipeline.add_argument("--overwrite", action="store_true")
+
+    mesh_registry = commands.add_parser(
+        "build-mesh-object-registry",
+        help="Register every namespaced renderable object in a composed OBJ",
+    )
+    mesh_registry.add_argument("--project", required=True)
+    mesh_registry.add_argument("--obj", required=True)
+    mesh_registry.add_argument("--output", required=True)
+    mesh_registry.add_argument("--evidence-reference", required=True)
+    mesh_registry.add_argument("--overwrite", action="store_true")
+
+    small_assets = commands.add_parser(
+        "analyze-small-platform-assets",
+        help="Extract owned above-platform connected components for photo review",
+    )
+    small_assets.add_argument("--project", required=True)
+    small_assets.add_argument("--segment", required=True)
+    small_assets.add_argument("--platform-report", required=True)
+    small_assets.add_argument("--ownership-plan", required=True)
+    small_assets.add_argument("--overwrite", action="store_true")
+
+    small_asset_photo = commands.add_parser(
+        "small-asset-photo-evidence",
+        help="Project owned small above-platform candidates into calibrated panoramas",
+    )
+    small_asset_photo.add_argument("--project", required=True)
+    small_asset_photo.add_argument("--segment", required=True)
+    small_asset_photo.add_argument("--small-asset-report", required=True)
+    small_asset_photo.add_argument("--projection-consensus", required=True)
+    small_asset_photo.add_argument("--settings")
+    small_asset_photo.add_argument("--overwrite", action="store_true")
+
+    targeted_canopy = commands.add_parser(
+        "targeted-canopy-recover",
+        help="Recover a reviewed platform canopy without mutating source predictions",
+    )
+    targeted_canopy.add_argument("--project", required=True)
+    targeted_canopy.add_argument("--segment", required=True)
+    targeted_canopy.add_argument("--semantic-review", required=True)
+    targeted_canopy.add_argument("--vertical-report")
+    targeted_canopy.add_argument("--platform-report")
+    targeted_canopy.add_argument("--settings")
+    targeted_canopy.add_argument("--grid-review")
+    targeted_canopy.add_argument("--overwrite", action="store_true")
+
+    targeted_canopy_photo = commands.add_parser(
+        "targeted-canopy-photo-evidence",
+        help="Project inferred canopy grid positions into calibrated panoramas",
+    )
+    targeted_canopy_photo.add_argument("--project", required=True)
+    targeted_canopy_photo.add_argument("--segment", required=True)
+    targeted_canopy_photo.add_argument("--recovery-report", required=True)
+    targeted_canopy_photo.add_argument("--projection-consensus", required=True)
+    targeted_canopy_photo.add_argument("--settings")
+    targeted_canopy_photo.add_argument("--overwrite", action="store_true")
+
+    targeted_canopy_integrate = commands.add_parser(
+        "targeted-canopy-integrate",
+        help="Merge reviewed canopy nodes into a versioned candidate scene and registry",
+    )
+    targeted_canopy_integrate.add_argument("--project", required=True)
+    targeted_canopy_integrate.add_argument("--segment", required=True)
+    targeted_canopy_integrate.add_argument("--recovery-report", required=True)
+    targeted_canopy_integrate.add_argument("--visual-review", required=True)
+    targeted_canopy_integrate.add_argument("--release-id", required=True)
+    targeted_canopy_integrate.add_argument(
+        "--approve-candidate-merge",
+        action="store_true",
+        help="Explicitly authorize candidate model and canonical registry writes",
+    )
+    targeted_canopy_integrate.add_argument("--overwrite", action="store_true")
 
     build_track = commands.add_parser(
         "build-track", help="Build a baseline parametric track OBJ and register assets"
@@ -255,15 +773,20 @@ def build_parser() -> argparse.ArgumentParser:
     targeted_recovery.add_argument("--cross-half-width-m", type=float, default=0.10)
     targeted_recovery.add_argument("--vertical-below-m", type=float, default=0.12)
     targeted_recovery.add_argument("--vertical-above-m", type=float, default=0.05)
-    targeted_recovery.add_argument(
-        "--minimum-joint-support-ratio", type=float, default=0.60
+    targeted_recovery.add_argument("--minimum-joint-support-ratio", type=float, default=0.60)
+    targeted_recovery.add_argument("--maximum-asymmetric-support-ratio", type=float, default=0.25)
+    targeted_recovery.add_argument("--maximum-internal-joint-gap-m", type=float, default=5.0)
+
+    recovery_selection = commands.add_parser(
+        "track-recovery-select",
+        help="Run fail-closed per-segment rail recovery A/B selection over corridor gaps",
     )
-    targeted_recovery.add_argument(
-        "--maximum-asymmetric-support-ratio", type=float, default=0.25
-    )
-    targeted_recovery.add_argument(
-        "--maximum-internal-joint-gap-m", type=float, default=5.0
-    )
+    recovery_selection.add_argument("--project", required=True)
+    recovery_selection.add_argument("--baseline-graph", required=True)
+    recovery_selection.add_argument("--baseline-audit", required=True)
+    recovery_selection.add_argument("--settings", required=True)
+    recovery_selection.add_argument("--output-name", default="rail_recovery_selection_v1")
+    recovery_selection.add_argument("--overwrite", action="store_true")
 
     bind_recovery = commands.add_parser(
         "track-recovery-bind-scene",
@@ -288,6 +811,22 @@ def build_parser() -> argparse.ArgumentParser:
     build_graph_mesh.add_argument("--output-dir")
     build_graph_mesh.add_argument("--report-dir")
     build_graph_mesh.add_argument("--skip-registry", action="store_true")
+    build_graph_mesh.add_argument(
+        "--candidate-only-nonpassing-audit",
+        action="store_true",
+        help=(
+            "Write a non-registering review candidate when core topology checks pass but "
+            "the source TrackGraph still has explicit evidence or measurement failures"
+        ),
+    )
+    build_graph_mesh.add_argument(
+        "--include-inferred-gap-hypotheses",
+        action="store_true",
+        help="Render bounded evidence gaps as separate orange candidate objects",
+    )
+    build_graph_mesh.add_argument(
+        "--maximum-inferred-gap-m", type=float, default=250.0
+    )
     build_graph_mesh.add_argument("--overwrite", action="store_true")
 
     create_track_review = commands.add_parser(
@@ -298,9 +837,7 @@ def build_parser() -> argparse.ArgumentParser:
     create_track_review.add_argument(
         "--source", action="append", required=True, help="Repeat SEGMENT=RAIL_REPORT"
     )
-    create_track_review.add_argument(
-        "--output-name", default="track_graph_rail_review_v1"
-    )
+    create_track_review.add_argument("--output-name", default="track_graph_rail_review_v1")
 
     apply_track_review = commands.add_parser(
         "track-review-apply",
@@ -342,6 +879,29 @@ def build_parser() -> argparse.ArgumentParser:
     projection.add_argument("--segment", required=True)
     projection.add_argument("--camera-index", required=True, type=int)
     projection.add_argument("--overwrite", action="store_true")
+
+    projection_consensus = commands.add_parser(
+        "calibrate-projection-consensus",
+        help="Select one point-to-panorama convention from at least three cameras",
+    )
+    projection_consensus.add_argument("--project", required=True)
+    projection_consensus.add_argument(
+        "--sample",
+        action="append",
+        required=True,
+        help="Repeat SEGMENT=CAMERA_INDEX for three or more independent panoramas",
+    )
+    projection_consensus.add_argument("--output-name", required=True)
+    projection_consensus.add_argument("--overwrite", action="store_true")
+
+    seam_compare = commands.add_parser(
+        "seam-rail-compare",
+        help="Compare rail heads extracted from two LAZ sources in one shared segment frame",
+    )
+    seam_compare.add_argument("--project", required=True)
+    seam_compare.add_argument("--left-report", required=True)
+    seam_compare.add_argument("--right-report", required=True)
+    seam_compare.add_argument("--output", required=True)
 
     registry_init = commands.add_parser("registry-init", help="Create an empty asset registry")
     registry_init.add_argument("--project", required=True)
@@ -601,9 +1161,7 @@ def build_parser() -> argparse.ArgumentParser:
     benchmark_holdout_bootstrap.add_argument("--output", required=True)
     benchmark_holdout_bootstrap.add_argument("--iterations", type=int, default=10_000)
     benchmark_holdout_bootstrap.add_argument("--seed", type=int, default=20260827)
-    benchmark_holdout_bootstrap.add_argument(
-        "--minimum-confirmatory-blocks", type=int, default=10
-    )
+    benchmark_holdout_bootstrap.add_argument("--minimum-confirmatory-blocks", type=int, default=10)
 
     benchmark_vertical_fit_selection = commands.add_parser(
         "benchmark-select-rail-vertical-fit",
@@ -650,15 +1208,11 @@ def build_parser() -> argparse.ArgumentParser:
     rail_regression.add_argument("--sample-step-m", type=float, default=0.25)
     rail_regression.add_argument("--maximum-cross-change-m", type=float, default=0.001)
     rail_regression.add_argument("--allow-additional-lines", action="store_true")
-    rail_regression.add_argument(
-        "--per-segment-support-p90-tolerance-m", type=float, default=0.005
-    )
+    rail_regression.add_argument("--per-segment-support-p90-tolerance-m", type=float, default=0.005)
     rail_regression.add_argument(
         "--maximum-additional-line-support-p90-m", type=float, default=0.075
     )
-    rail_regression.add_argument(
-        "--maximum-matched-line-support-p90-m", type=float, default=0.060
-    )
+    rail_regression.add_argument("--maximum-matched-line-support-p90-m", type=float, default=0.060)
 
     benchmark_comparison_figure = commands.add_parser(
         "benchmark-render-rail-comparison",
@@ -693,9 +1247,7 @@ def build_parser() -> argparse.ArgumentParser:
     benchmark_annotation.add_argument(
         "--source", action="append", required=True, help="Repeat SEGMENT=FEATURE_REPORT"
     )
-    benchmark_annotation.add_argument(
-        "--output-name", default="vertical_candidates_blind_v1"
-    )
+    benchmark_annotation.add_argument("--output-name", default="vertical_candidates_blind_v1")
     benchmark_annotation.add_argument("--seed", type=int, default=20260826)
 
     benchmark_annotation_check = commands.add_parser(
@@ -719,21 +1271,15 @@ def build_parser() -> argparse.ArgumentParser:
     benchmark_rail_evidence.add_argument("--cross-max-m", type=float, default=20.0)
     benchmark_rail_evidence.add_argument("--z-min-m", type=float)
     benchmark_rail_evidence.add_argument("--z-max-m", type=float)
-    benchmark_rail_evidence.add_argument(
-        "--output-name", default="rail_neutral_evidence_v1"
-    )
+    benchmark_rail_evidence.add_argument("--output-name", default="rail_neutral_evidence_v1")
 
     benchmark_rail_annotation = commands.add_parser(
         "benchmark-make-rail-truth-tasks",
         help="Build double-blind rail geometry tasks from neutral raw-point evidence",
     )
     benchmark_rail_annotation.add_argument("--root", required=True)
-    benchmark_rail_annotation.add_argument(
-        "--evidence-manifest", action="append", required=True
-    )
-    benchmark_rail_annotation.add_argument(
-        "--output-name", default="rail_geometry_blind_v1"
-    )
+    benchmark_rail_annotation.add_argument("--evidence-manifest", action="append", required=True)
+    benchmark_rail_annotation.add_argument("--output-name", default="rail_geometry_blind_v1")
     benchmark_rail_annotation.add_argument("--seed", type=int, default=20260827)
 
     benchmark_rail_annotation_check = commands.add_parser(
@@ -760,13 +1306,42 @@ def build_parser() -> argparse.ArgumentParser:
         help="Measure two completed blind reviews and create an adjudication queue",
     )
     benchmark_review_compare.add_argument("--annotation-package", required=True)
-    benchmark_review_compare.add_argument(
-        "--output-name", default="vertical_review_comparison_v1"
-    )
+    benchmark_review_compare.add_argument("--output-name", default="vertical_review_comparison_v1")
 
     mesh_audit = commands.add_parser("mesh-audit", help="Audit an OBJ before Blender/UE import")
     mesh_audit.add_argument("--path", required=True)
     mesh_audit.add_argument("--area-tolerance", type=float, default=1e-12)
+
+    support_gate = commands.add_parser(
+        "audit-support-relationships",
+        help="Fail closed on candidate bearing/support claims without a measured owner",
+    )
+    support_gate.add_argument("--registry", required=True)
+    support_gate.add_argument("--patch", required=True)
+    support_gate.add_argument("--output", required=True)
+    support_gate.add_argument("--maximum-contact-residual-m", type=float, default=0.05)
+    support_gate.add_argument("--minimum-direct-evidence-kinds", type=int, default=1)
+    support_gate.add_argument("--allow-unmodeled-owner", action="store_true")
+
+    rapid_audit = commands.add_parser(
+        "audit-rapid-candidate",
+        help="Run the model-first internal candidate gate without relaxing artifact integrity",
+    )
+    rapid_audit.add_argument("--release-directory", required=True)
+    rapid_audit.add_argument("--manifest", required=True)
+    rapid_audit.add_argument("--delivery-gate", required=True)
+    rapid_audit.add_argument("--lineage")
+    rapid_audit.add_argument("--expected-release-id")
+    rapid_audit.add_argument("--expected-parent-release-id")
+    rapid_audit.add_argument("--output", required=True)
+
+    auto_review = commands.add_parser(
+        "auto-review-fixed-views",
+        help="Verify every fixed-view render and create a small risk-ranked spot-check queue",
+    )
+    auto_review.add_argument("--manifest", required=True)
+    auto_review.add_argument("--output", required=True)
+    auto_review.add_argument("--maximum-spot-checks", type=int, default=6)
 
     safety = commands.add_parser("safety-check", help="Check a repository before GitHub push")
     safety.add_argument("--root", default=".")
@@ -786,13 +1361,29 @@ def main(argv: list[str] | None = None) -> None:
         if args.command == "validate":
             value = load_json(Path(args.project))
             errors = validate_project_value(value)
-            _print({"project": str(Path(args.project).resolve()), "valid": not errors, "errors": errors})
+            _print(
+                {
+                    "project": str(Path(args.project).resolve()),
+                    "valid": not errors,
+                    "errors": errors,
+                }
+            )
             if errors:
                 raise SystemExit(2)
             return
         if args.command == "audit":
             code = _project_command(
                 args, "audit", lambda project: audit_project(project, full_hash=args.full_hash)
+            )
+        elif args.command == "prepare-inputs":
+            code = _project_command(
+                args,
+                "prepare_inputs",
+                lambda project: prepare_input_sources(
+                    project,
+                    full_hash=args.full_hash,
+                    camera_bbox_margin_m=args.camera_bbox_margin_m,
+                ),
             )
         elif args.command == "plan-segments":
             code = _project_command(args, "plan_segments", plan_segments)
@@ -801,6 +1392,40 @@ def main(argv: list[str] | None = None) -> None:
                 args,
                 "segment",
                 lambda project: crop_segments(project, set(args.ids or []), args.overwrite),
+            )
+        elif args.command == "segment-context":
+            code = _project_command(
+                args,
+                "segment_context",
+                lambda project: crop_segment_context_sources(project, args.segment, args.overwrite),
+            )
+        elif args.command == "full-corridor-plan":
+            code = _project_command(args, "full_corridor_plan", build_full_corridor_plan)
+        elif args.command == "full-corridor-run":
+            code = _project_command(
+                args,
+                "full_corridor_run",
+                lambda project: run_full_corridor(
+                    project,
+                    through=args.through,
+                    continue_on_error=not args.fail_fast,
+                ),
+            )
+        elif args.command == "run-global-scene-candidate":
+            code = _project_command(
+                args,
+                "run_global_scene_candidate_pipeline",
+                lambda project: run_global_scene_candidate_pipeline(
+                    project,
+                    args.track_graph,
+                    args.track_graph_audit,
+                    args.output_root,
+                    args.output_name,
+                    station_assets_obj=args.station_assets_obj,
+                    include_inferred_track_gaps=args.include_inferred_track_gaps,
+                    maximum_inferred_track_gap_m=args.maximum_inferred_track_gap_m,
+                    overwrite=args.overwrite,
+                ),
             )
         elif args.command == "detect-rails":
             code = _project_command(
@@ -820,6 +1445,480 @@ def main(argv: list[str] | None = None) -> None:
                 args,
                 "detect_linear",
                 lambda project: detect_linear_candidates(project, args.segment, args.overwrite),
+            )
+        elif args.command == "classify-vertical":
+            code = _project_command(
+                args,
+                "classify_vertical",
+                lambda project: analyze_vertical_hypotheses(
+                    project,
+                    args.segment,
+                    overwrite=args.overwrite,
+                    linear_report_path=args.linear_report,
+                    rail_report_path=args.rail_report,
+                    settings_path=args.settings,
+                ),
+            )
+        elif args.command == "analyze-canopy":
+            code = _project_command(
+                args,
+                "analyze_canopy",
+                lambda project: analyze_canopy_structure(
+                    project,
+                    args.segment,
+                    overwrite=args.overwrite,
+                    vertical_report_path=args.vertical_report,
+                    settings_path=args.settings,
+                ),
+            )
+        elif args.command == "canopy-photo-evidence":
+            code = _project_command(
+                args,
+                "canopy_photo_evidence",
+                lambda project: analyze_canopy_photo_evidence(
+                    project,
+                    args.segment,
+                    args.projection_consensus,
+                    overwrite=args.overwrite,
+                    canopy_report_path=args.canopy_report,
+                    vertical_report_path=args.vertical_report,
+                    settings_path=args.settings,
+                ),
+            )
+        elif args.command == "analyze-platform":
+            code = _project_command(
+                args,
+                "analyze_platform",
+                lambda project: analyze_platform_surface(
+                    project,
+                    args.segment,
+                    overwrite=args.overwrite,
+                    vertical_report_path=args.vertical_report,
+                    settings_path=args.settings,
+                ),
+            )
+        elif args.command == "platform-photo-evidence":
+            code = _project_command(
+                args,
+                "platform_photo_evidence",
+                lambda project: analyze_platform_photo_evidence(
+                    project,
+                    args.segment,
+                    args.projection_consensus,
+                    overwrite=args.overwrite,
+                    platform_report_path=args.platform_report,
+                    settings_path=args.settings,
+                ),
+            )
+        elif args.command == "build-platform-mesh":
+            code = _project_command(
+                args,
+                "build_platform_mesh",
+                lambda project: build_platform_mesh(
+                    project,
+                    args.segment,
+                    args.mesh_gate,
+                    overwrite=args.overwrite,
+                    platform_report_path=args.platform_report,
+                    settings_path=args.settings,
+                ),
+            )
+        elif args.command == "create-platform-candidate-gate":
+            code = _project_command(
+                args,
+                "create_platform_candidate_gate",
+                lambda project: evaluate_platform_candidate_gate(
+                    project,
+                    args.segment,
+                    args.platform_report,
+                    args.output,
+                    component_id=args.component_id,
+                    ownership_plan_value=args.ownership_plan,
+                    gap_point_evidence_value=args.gap_point_evidence,
+                    overwrite=args.overwrite,
+                ),
+                required_status={"pass_candidate"},
+            )
+        elif args.command == "analyze-platform-gap-points":
+            code = _project_command(
+                args,
+                "analyze_platform_gap_points",
+                lambda project: analyze_platform_gap_point_evidence(
+                    project,
+                    args.segment,
+                    args.platform_report,
+                    args.output,
+                    settings_value=args.settings,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "audit-platform-interfaces":
+            code = _project_command(
+                args,
+                "audit_platform_interfaces",
+                lambda project: audit_platform_interfaces(
+                    project,
+                    args.segment,
+                    mesh_build_report_path=args.mesh_build_report,
+                    platform_report_path=args.platform_report,
+                    vertical_report_path=args.vertical_report,
+                    canopy_report_path=args.canopy_report,
+                    settings_path=args.settings,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "reconstruct-opposite-platform":
+            code = _project_command(
+                args,
+                "reconstruct_opposite_platform",
+                lambda project: reconstruct_opposite_platform(
+                    project,
+                    args.segment,
+                    args.point_cloud,
+                    args.vertical_report,
+                    args.output_dir,
+                    side=args.side,
+                    owned_interval_m=(
+                        (args.minimum_longitudinal_m, args.maximum_longitudinal_m)
+                        if args.minimum_longitudinal_m is not None
+                        and args.maximum_longitudinal_m is not None
+                        else None
+                    ),
+                    ownership_plan_path=args.ownership_plan,
+                    settings_path=args.settings,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "vertical-conflict-photo-evidence":
+            code = _project_command(
+                args,
+                "vertical_conflict_photo_evidence",
+                lambda project: analyze_vertical_conflict_photo_evidence(
+                    project,
+                    args.segment,
+                    args.projection_consensus,
+                    interface_report_path=args.interface_report,
+                    vertical_report_path=args.vertical_report,
+                    settings_path=args.settings,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "vertical-candidate-photo-evidence":
+            code = _project_command(
+                args,
+                "vertical_candidate_photo_evidence",
+                lambda project: analyze_selected_vertical_photo_evidence(
+                    project,
+                    args.segment,
+                    args.candidate,
+                    args.projection_consensus,
+                    args.output_name,
+                    vertical_report_path=args.vertical_report,
+                    settings_path=args.settings,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "catenary-section-audit":
+            code = _project_command(
+                args,
+                "catenary_section_audit",
+                lambda project: audit_catenary_candidate_section(
+                    project,
+                    args.segment,
+                    args.candidate,
+                    vertical_report_path=args.vertical_report,
+                    output_path=args.output,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "catenary-candidate-mesh":
+            code = _project_command(
+                args,
+                "catenary_candidate_mesh",
+                lambda project: build_catenary_candidate_mesh(
+                    project,
+                    args.vertical_report,
+                    args.semantic_review,
+                    args.section_audit,
+                    output_dir=args.output_dir,
+                    report_dir=args.report_dir,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "catenary-track-clearance-audit":
+            code = _project_command(
+                args,
+                "catenary_track_clearance_audit",
+                lambda project: audit_catenary_track_clearance_files(
+                    project,
+                    args.track_graph,
+                    args.section_audit,
+                    args.track_build,
+                    args.output,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "run-corridor-catenary-pipeline":
+            code = _project_command(
+                args,
+                "run_corridor_catenary_pipeline",
+                lambda project: run_corridor_catenary_pipeline(
+                    project,
+                    args.output_dir,
+                    args.output_name,
+                    settings_value=args.settings,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "run-corridor-conductor-pipeline":
+            code = _project_command(
+                args,
+                "run_corridor_conductor_pipeline",
+                lambda project: run_corridor_conductor_pipeline(
+                    project,
+                    args.track_graph,
+                    args.output_dir,
+                    args.output_name,
+                    settings_value=args.settings,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "build-segment-ownership-plan":
+            segment_frames: dict[str, str] = {}
+            for item in args.segment_frame:
+                if "=" not in item:
+                    raise ValueError("--segment-frame must be SEGMENT_ID=PATH")
+                segment_id, frame_path = item.split("=", 1)
+                if not segment_id or not frame_path or segment_id in segment_frames:
+                    raise ValueError(
+                        "Segment frame entries must have unique non-empty IDs and paths"
+                    )
+                segment_frames[segment_id] = frame_path
+            code = _project_command(
+                args,
+                "build_segment_ownership_plan",
+                lambda project: build_segment_ownership_plan(
+                    project,
+                    segment_frames,
+                    args.output,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "clip-segment-mesh-ownership":
+            code = _project_command(
+                args,
+                "clip_segment_mesh_ownership",
+                lambda project: clip_segment_mesh_ownership(
+                    project,
+                    args.source_obj,
+                    args.source_origin,
+                    args.frame_report,
+                    args.output_dir,
+                    minimum_longitudinal_m=args.minimum_longitudinal_m,
+                    maximum_longitudinal_m=args.maximum_longitudinal_m,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "audit-owned-mesh-seams":
+            segment_meshes: dict[str, str] = {}
+            for item in args.segment_mesh:
+                if "=" not in item:
+                    raise ValueError("--segment-mesh must be SEGMENT_ID=PATH")
+                segment_id, mesh_path = item.split("=", 1)
+                if not segment_id or not mesh_path or segment_id in segment_meshes:
+                    raise ValueError(
+                        "Segment mesh entries must have unique non-empty IDs and paths"
+                    )
+                segment_meshes[segment_id] = mesh_path
+            code = _project_command(
+                args,
+                "audit_owned_mesh_seams",
+                lambda project: audit_owned_mesh_seams(
+                    project,
+                    args.ownership_plan,
+                    segment_meshes,
+                    args.output,
+                    p90_max_m=args.p90_max_m,
+                    boundary_tolerance_m=args.boundary_tolerance_m,
+                    sample_spacing_m=args.sample_spacing_m,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "assemble-candidate-meshes":
+            code = _project_command(
+                args,
+                "assemble_candidate_meshes",
+                lambda project: assemble_candidate_meshes(
+                    project,
+                    args.output_dir,
+                    args.output_name,
+                    parse_mesh_source_specs(args.source),
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "run-station-platform-pipeline":
+            code = _project_command(
+                args,
+                "run_station_platform_pipeline",
+                lambda project: run_station_platform_pipeline(
+                    project,
+                    args.ownership_plan,
+                    args.segment,
+                    args.output_name,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "recover-corridor-column-grid":
+            vertical_report_items = _assignments(args.vertical_report, "--vertical-report")
+            vertical_reports = dict(vertical_report_items)
+            if len(vertical_reports) != len(vertical_report_items):
+                raise ValueError("--vertical-report segment IDs must be unique")
+            code = _project_command(
+                args,
+                "recover_corridor_column_grid",
+                lambda project: recover_corridor_column_grid(
+                    project,
+                    args.ownership_plan,
+                    vertical_reports,
+                    args.output,
+                    side=args.side,
+                    settings_path=args.settings,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "validate-corridor-column-grid":
+            code = _project_command(
+                args,
+                "validate_corridor_column_grid",
+                lambda project: validate_corridor_column_grid(
+                    project,
+                    args.grid,
+                    args.output,
+                    settings_value=args.settings,
+                    overwrite=args.overwrite,
+                ),
+                required_status={
+                    "local_point_support_evaluated_geometry_remains_candidate"
+                },
+            )
+        elif args.command == "reconcile-mesh-seams":
+            code = _project_command(
+                args,
+                "reconcile_mesh_seams",
+                lambda project: reconcile_mesh_seams(
+                    project,
+                    args.source_obj,
+                    args.source_origin,
+                    args.frame_report,
+                    args.settings,
+                    args.output_dir,
+                    registry_path=args.registry,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "build-corridor-canopy-candidate":
+            code = _project_command(
+                args,
+                "build_corridor_canopy_candidate",
+                lambda project: build_corridor_canopy_candidate(
+                    project,
+                    args.ownership_plan,
+                    args.supported_grid,
+                    args.output_name,
+                    settings_value=args.settings,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "run-side-asset-pipeline":
+            code = _project_command(
+                args,
+                "run_side_asset_pipeline",
+                lambda project: run_side_asset_pipeline(
+                    project,
+                    args.plan,
+                    args.output,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "build-mesh-object-registry":
+            code = _project_command(
+                args,
+                "build_mesh_object_registry",
+                lambda project: build_mesh_object_registry(
+                    project,
+                    args.obj,
+                    args.output,
+                    evidence_reference=args.evidence_reference,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "analyze-small-platform-assets":
+            code = _project_command(
+                args,
+                "analyze_small_platform_asset_candidates",
+                lambda project: analyze_small_platform_asset_candidates(
+                    project,
+                    args.segment,
+                    args.platform_report,
+                    args.ownership_plan,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "small-asset-photo-evidence":
+            code = _project_command(
+                args,
+                "small_asset_photo_evidence",
+                lambda project: analyze_small_asset_photo_evidence(
+                    project,
+                    args.segment,
+                    args.small_asset_report,
+                    args.projection_consensus,
+                    settings_path=args.settings,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "targeted-canopy-recover":
+            code = _project_command(
+                args,
+                "targeted_canopy_recover",
+                lambda project: recover_targeted_canopy(
+                    project,
+                    args.segment,
+                    args.semantic_review,
+                    overwrite=args.overwrite,
+                    vertical_report_path=args.vertical_report,
+                    platform_report_path=args.platform_report,
+                    settings_path=args.settings,
+                    grid_review_path=args.grid_review,
+                ),
+            )
+        elif args.command == "targeted-canopy-photo-evidence":
+            code = _project_command(
+                args,
+                "targeted_canopy_photo_evidence",
+                lambda project: targeted_canopy_photo_evidence(
+                    project,
+                    args.segment,
+                    args.recovery_report,
+                    args.projection_consensus,
+                    settings_path=args.settings,
+                    overwrite=args.overwrite,
+                ),
+            )
+        elif args.command == "targeted-canopy-integrate":
+            code = _project_command(
+                args,
+                "targeted_canopy_integrate",
+                lambda project: integrate_targeted_canopy_candidate(
+                    project,
+                    args.segment,
+                    args.recovery_report,
+                    args.visual_review,
+                    args.release_id,
+                    approve_candidate_merge=args.approve_candidate_merge,
+                    overwrite=args.overwrite,
+                ),
+                required_status={"candidate_scene_integrated"},
             )
         elif args.command == "build-track":
             code = _project_command(
@@ -858,20 +1957,14 @@ def main(argv: list[str] | None = None) -> None:
                 vertical_below_m=args.vertical_below_m,
                 vertical_above_m=args.vertical_above_m,
                 minimum_joint_support_ratio=args.minimum_joint_support_ratio,
-                maximum_asymmetric_support_ratio=(
-                    args.maximum_asymmetric_support_ratio
-                ),
+                maximum_asymmetric_support_ratio=(args.maximum_asymmetric_support_ratio),
                 maximum_internal_joint_gap_m=args.maximum_internal_joint_gap_m,
             )
             report = load_json(path)
             updated_graph = (
                 None
                 if args.updated_graph is None
-                else str(
-                    apply_targeted_rail_recovery(
-                        args.graph, path, args.updated_graph
-                    )
-                )
+                else str(apply_targeted_rail_recovery(args.graph, path, args.updated_graph))
             )
             _print(
                 {
@@ -881,6 +1974,19 @@ def main(argv: list[str] | None = None) -> None:
                 }
             )
             code = 0
+        elif args.command == "track-recovery-select":
+            code = _project_command(
+                args,
+                "track_recovery_select",
+                lambda project: select_corridor_rail_recoveries(
+                    project,
+                    args.baseline_graph,
+                    args.baseline_audit,
+                    args.settings,
+                    output_name=args.output_name,
+                    overwrite=args.overwrite,
+                ),
+            )
         elif args.command == "track-recovery-bind-scene":
             path = bind_targeted_recovery_to_scene(
                 args.source_glb,
@@ -914,7 +2020,12 @@ def main(argv: list[str] | None = None) -> None:
                     args.overwrite,
                     args.output_dir,
                     args.report_dir,
-                    not args.skip_registry,
+                    not args.skip_registry
+                    and not args.candidate_only_nonpassing_audit
+                    and not args.include_inferred_gap_hypotheses,
+                    args.candidate_only_nonpassing_audit,
+                    args.include_inferred_gap_hypotheses,
+                    args.maximum_inferred_gap_m,
                 ),
             )
         elif args.command == "track-review-create":
@@ -978,6 +2089,28 @@ def main(argv: list[str] | None = None) -> None:
                     project, args.segment, args.camera_index, args.overwrite
                 ),
             )
+        elif args.command == "calibrate-projection-consensus":
+            code = _project_command(
+                args,
+                "calibrate_projection_consensus",
+                lambda project: calibrate_projection_consensus(
+                    project,
+                    _projection_samples(args.sample),
+                    args.output_name,
+                    args.overwrite,
+                ),
+            )
+        elif args.command == "seam-rail-compare":
+            code = _project_command(
+                args,
+                "seam_rail_compare",
+                lambda project: compare_seam_rail_reports(
+                    project,
+                    Path(args.left_report),
+                    Path(args.right_report),
+                    Path(args.output),
+                ),
+            )
         elif args.command == "registry-init":
             code = _project_command(
                 args,
@@ -1001,9 +2134,7 @@ def main(argv: list[str] | None = None) -> None:
             code = _project_command(
                 args,
                 "registry_freeze",
-                lambda project: freeze_release_registry(
-                    project, args.release_id, args.output
-                ),
+                lambda project: freeze_release_registry(project, args.release_id, args.output),
             )
         elif args.command == "qa":
             code = _project_command(args, "qa", quality_report)
@@ -1124,9 +2255,7 @@ def main(argv: list[str] | None = None) -> None:
                     "segment_count": len(manifest["segments"]),
                     "strategy": manifest["strategy"],
                     "voxel_size_m": manifest["voxel_size_m"],
-                    "requested_holdout_fraction": manifest[
-                        "requested_holdout_fraction"
-                    ],
+                    "requested_holdout_fraction": manifest["requested_holdout_fraction"],
                 }
             )
             code = 0
@@ -1344,15 +2473,9 @@ def main(argv: list[str] | None = None) -> None:
                 core_length_m=args.core_length_m,
                 sample_step_m=args.sample_step_m,
                 maximum_cross_change_m=args.maximum_cross_change_m,
-                per_segment_support_p90_tolerance_m=(
-                    args.per_segment_support_p90_tolerance_m
-                ),
-                maximum_additional_line_support_p90_m=(
-                    args.maximum_additional_line_support_p90_m
-                ),
-                maximum_matched_line_support_p90_m=(
-                    args.maximum_matched_line_support_p90_m
-                ),
+                per_segment_support_p90_tolerance_m=(args.per_segment_support_p90_tolerance_m),
+                maximum_additional_line_support_p90_m=(args.maximum_additional_line_support_p90_m),
+                maximum_matched_line_support_p90_m=(args.maximum_matched_line_support_p90_m),
             )
             report = load_json(path)
             _print({"report": str(path), "status": report["status"], **report["aggregate"]})
@@ -1498,6 +2621,59 @@ def main(argv: list[str] | None = None) -> None:
                 }
             )
             code = 0
+        elif args.command == "audit-support-relationships":
+            output = Path(args.output).resolve()
+            if output.exists():
+                raise FileExistsError(output)
+            report = validate_support_relationship_patch(
+                load_json(Path(args.registry)),
+                load_json(Path(args.patch)),
+                policy=SupportRelationshipPolicy(
+                    maximum_absolute_contact_residual_m=args.maximum_contact_residual_m,
+                    minimum_direct_evidence_kinds=args.minimum_direct_evidence_kinds,
+                    require_modeled_owner=not args.allow_unmodeled_owner,
+                ),
+            )
+            output.parent.mkdir(parents=True, exist_ok=True)
+            with output.open("x", encoding="utf-8", newline="\n") as stream:
+                stream.write(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+            _print({"report": str(output), **report["summary"], "status": report["status"]})
+            code = 0 if report["relationship_patch_allowed"] else 2
+        elif args.command == "audit-rapid-candidate":
+            report = write_rapid_candidate_audit(
+                args.output,
+                args.release_directory,
+                args.manifest,
+                args.delivery_gate,
+                lineage_path=args.lineage,
+                expected_release_id=args.expected_release_id,
+                expected_parent_release_id=args.expected_parent_release_id,
+            )
+            _print(
+                {
+                    "report": str(Path(args.output).resolve()),
+                    "release_id": report["release_id"],
+                    "iteration_ready": report["iteration_ready"],
+                    "hard_blocker_count": report["hard_blocker_count"],
+                    "warning_count": report["warning_count"],
+                }
+            )
+            code = 0 if report["passed"] else 2
+        elif args.command == "auto-review-fixed-views":
+            report = write_fixed_view_auto_review(
+                args.output,
+                args.manifest,
+                maximum_spot_checks=args.maximum_spot_checks,
+            )
+            _print(
+                {
+                    "report": str(Path(args.output).resolve()),
+                    "release_id": report["release_id"],
+                    "status": report["status"],
+                    **report["summary"],
+                }
+            )
+            code = 0 if report["passed"] else 2
         elif args.command == "mesh-audit":
             path = Path(args.path)
             if path.suffix.lower() != ".obj":

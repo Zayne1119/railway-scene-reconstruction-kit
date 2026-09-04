@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,7 @@ from ..camera import camera_trajectory, load_camera_rows
 from ..config import ProjectConfig
 from ..io import load_json, sha256_file, write_json
 from ..mesh_audit import audit_obj
+from ..multi_source import effective_camera_csv_path
 from ..registry import new_registry, summarize_registry, validate_registry_value
 from ..track_graph import (
     RouteSampler,
@@ -17,7 +19,120 @@ from ..track_graph import (
     load_track_graph_settings,
     validate_track_graph_bindings,
 )
-from .mesh import ObjWriter, oriented_box, rail_profile, sweep_mesh, write_track_materials
+from .mesh import (
+    ObjWriter,
+    oriented_box,
+    rail_profile,
+    sweep_mesh,
+    write_track_materials,
+)
+
+_CANDIDATE_REQUIRED_TRACK_GRAPH_CHECKS = frozenset(
+    {
+        "track_graph_structure",
+        "topology_degree",
+        "canonical_direction",
+        "candidate_rail_position_correction",
+        "paired_rail_continuity",
+        "track_identity_order",
+        "inferred_spans",
+        "duplicate_tracks",
+    }
+)
+
+
+def _candidate_audit_failures(audit: dict[str, Any]) -> list[dict[str, Any]]:
+    checks = {
+        str(item.get("id")): item
+        for item in audit.get("checks", [])
+        if isinstance(item, dict) and item.get("id") is not None
+    }
+    missing = sorted(_CANDIDATE_REQUIRED_TRACK_GRAPH_CHECKS - checks.keys())
+    if missing:
+        raise ValueError(
+            "TrackGraph candidate audit is missing required checks: " + ", ".join(missing)
+        )
+    blocked = sorted(
+        check_id
+        for check_id in _CANDIDATE_REQUIRED_TRACK_GRAPH_CHECKS
+        if checks[check_id].get("status") != "pass"
+    )
+    if blocked:
+        raise ValueError(
+            "TrackGraph candidate mesh is blocked by core audit checks: "
+            + ", ".join(blocked)
+        )
+    return [
+        {
+            "id": str(item.get("id")),
+            "status": str(item.get("status")),
+            "failure_count": int(item.get("failure_count", 0)),
+        }
+        for item in audit.get("checks", [])
+        if isinstance(item, dict) and item.get("status") != "pass"
+    ]
+
+
+def _interval_component_id(
+    track_id: str,
+    component: str,
+    interval: dict[str, Any],
+    interval_index: int,
+    interval_count: int,
+) -> str:
+    evidence = str(interval["evidence_level"])
+    if interval_count == 1 and evidence == "observed":
+        return f"{track_id}-{component}"
+    label = "OBSERVED" if evidence == "observed" else "INFERRED"
+    return f"{track_id}-{component}-{label}-{interval_index:03d}"
+
+
+def _evidence_interval_gaps(
+    intervals: list[dict[str, Any]],
+) -> list[dict[str, float]]:
+    ordered = sorted(intervals, key=lambda item: float(item["chainage_start_m"]))
+    return [
+        {
+            "chainage_start_m": float(left["chainage_end_m"]),
+            "chainage_end_m": float(right["chainage_start_m"]),
+            "length_m": float(right["chainage_start_m"])
+            - float(left["chainage_end_m"]),
+        }
+        for left, right in pairwise(ordered)
+        if float(right["chainage_start_m"]) > float(left["chainage_end_m"])
+    ]
+
+
+def _candidate_inferred_gap_intervals(
+    intervals: list[dict[str, Any]], maximum_gap_m: float
+) -> list[dict[str, Any]]:
+    """Create bounded, explicit hypothesis intervals between observed controls."""
+
+    if maximum_gap_m <= 0:
+        raise ValueError("maximum inferred track gap must be positive")
+    ordered = sorted(intervals, key=lambda item: float(item["chainage_start_m"]))
+    inferred: list[dict[str, Any]] = []
+    for left, right in pairwise(ordered):
+        start = float(left["chainage_end_m"])
+        end = float(right["chainage_start_m"])
+        length = end - start
+        if length <= 1e-9 or length > maximum_gap_m:
+            continue
+        boundary_sources = [
+            *list(left.get("source_observation_ids", []))[-1:],
+            *list(right.get("source_observation_ids", []))[:1],
+        ]
+        inferred.append(
+            {
+                "chainage_start_m": start,
+                "chainage_end_m": end,
+                "evidence_level": "rule_inferred",
+                "source_observation_ids": boundary_sources,
+                "inference_reason": "bounded_gap_between_observed_track_controls",
+                "maximum_allowed_gap_m": float(maximum_gap_m),
+            }
+        )
+    return inferred
 
 
 def _chainage_samples(
@@ -409,6 +524,9 @@ def build_track_graph_mesh(
     output_dir_value: str | Path | None = None,
     report_dir_value: str | Path | None = None,
     update_registry: bool = True,
+    candidate_only_nonpassing_audit: bool = False,
+    include_inferred_gap_hypotheses: bool = False,
+    maximum_inferred_gap_m: float = 250.0,
 ) -> dict[str, Any]:
     graph_path = (
         Path(graph_value).resolve()
@@ -428,14 +546,36 @@ def build_track_graph_mesh(
     graph_hash = sha256_file(graph_path)
     if recorded_audit.get("graph_sha256") != graph_hash:
         raise ValueError("TrackGraph hash does not match its audit; rebuild or revalidate it")
-    if recorded_audit.get("status") != "pass":
+    recorded_audit_passed = recorded_audit.get("status") == "pass"
+    if not recorded_audit_passed and not candidate_only_nonpassing_audit:
         raise ValueError(f"TrackGraph audit is not pass: {recorded_audit.get('status')}")
+    if candidate_only_nonpassing_audit and update_registry:
+        raise ValueError(
+            "Candidate-only TrackGraph mesh cannot update the canonical asset registry"
+        )
+    if include_inferred_gap_hypotheses and update_registry:
+        raise ValueError(
+            "Track gap hypotheses are candidate-only and cannot update the canonical registry"
+        )
+    if include_inferred_gap_hypotheses and maximum_inferred_gap_m <= 0:
+        raise ValueError("maximum_inferred_gap_m must be positive")
+    recorded_nonpassing_checks = (
+        _candidate_audit_failures(recorded_audit)
+        if candidate_only_nonpassing_audit
+        else []
+    )
     binding_failures = validate_track_graph_bindings(project, graph)
     if binding_failures:
         raise ValueError(f"TrackGraph project bindings are stale: {binding_failures}")
     current_audit = audit_track_graph(graph, load_track_graph_settings(project))
-    if current_audit["status"] != "pass":
+    current_audit_passed = current_audit["status"] == "pass"
+    if not current_audit_passed and not candidate_only_nonpassing_audit:
         raise ValueError("TrackGraph no longer passes current project settings")
+    current_nonpassing_checks = (
+        _candidate_audit_failures(current_audit)
+        if candidate_only_nonpassing_audit
+        else []
+    )
 
     config = load_json(project.resolve(project.value["algorithms"]["track_build"]))
     global_config = config.get("global_mesh", {})
@@ -451,9 +591,7 @@ def build_track_graph_mesh(
                 + ", ".join(unsupported[:10])
             )
 
-    camera_path = project.input_path("camera_csv")
-    if camera_path is None or not camera_path.is_file():
-        raise FileNotFoundError(camera_path)
+    camera_path = effective_camera_csv_path(project)
     track_graph_settings = load_track_graph_settings(project)
     route = RouteSampler(
         camera_trajectory(load_camera_rows(camera_path)),
@@ -502,7 +640,18 @@ def build_track_graph_mesh(
         if not members:
             raise ValueError(f"TrackGraph track has no observations: {track_id}")
         chainages, centerline = _track_centerline(route, members, step)
-        evidence_intervals = _track_evidence_intervals(members)
+        source_evidence_intervals = _track_evidence_intervals(members)
+        inferred_gap_intervals = (
+            _candidate_inferred_gap_intervals(
+                source_evidence_intervals, maximum_inferred_gap_m
+            )
+            if include_inferred_gap_hypotheses
+            else []
+        )
+        evidence_intervals = sorted(
+            [*source_evidence_intervals, *inferred_gap_intervals],
+            key=lambda item: float(item["chainage_start_m"]),
+        )
         track_geometry.append(
             {
                 "track": track,
@@ -510,6 +659,8 @@ def build_track_graph_mesh(
                 "chainages": chainages,
                 "centerline": centerline,
                 "evidence_intervals": evidence_intervals,
+                "source_evidence_intervals": source_evidence_intervals,
+                "inferred_gap_intervals": inferred_gap_intervals,
             }
         )
 
@@ -573,6 +724,8 @@ def build_track_graph_mesh(
         chainages = value["chainages"]
         centerline = value["centerline"]
         evidence_intervals = value["evidence_intervals"]
+        source_evidence_intervals = value["source_evidence_intervals"]
+        inferred_gap_intervals = value["inferred_gap_intervals"]
         normals = _centerline_normals(centerline)
         observed_gauge = float(track["median_gauge_m"])
         observed_rail_center_spacing = float(
@@ -599,11 +752,13 @@ def build_track_graph_mesh(
         for side, line in (("LEFT", left), ("RIGHT", right)):
             for interval_index, interval in enumerate(evidence_intervals, start=1):
                 evidence = str(interval["evidence_level"])
-                if len(evidence_intervals) == 1 and evidence == "observed":
-                    asset_id = f"{track_id}-RAIL-{side}"
-                else:
-                    label = "OBSERVED" if evidence == "observed" else "INFERRED"
-                    asset_id = f"{track_id}-RAIL-{side}-{label}-{interval_index:03d}"
+                asset_id = _interval_component_id(
+                    track_id,
+                    f"RAIL-{side}",
+                    interval,
+                    interval_index,
+                    len(evidence_intervals),
+                )
                 interval_line = _polyline_interval(
                     chainages,
                     line,
@@ -664,54 +819,9 @@ def build_track_graph_mesh(
                 )
 
         sleeper = config["sleeper"]
-        sleeper_values = _sleeper_chainages(
-            float(chainages[0]),
-            float(chainages[-1]),
-            float(sleeper["spacing_m"]),
-            float(global_config.get("sleeper_phase_chainage_m", 0.0)),
-        )
-        sleeper_centers = _sample_centerline(chainages, centerline, sleeper_values)
-        sleeper_meshes: list[tuple[np.ndarray, list[tuple[int, ...]]]] = []
-        for sleeper_chainage, sleeper_center in zip(sleeper_values, sleeper_centers):
-            tangent = _sample_tangent(chainages, centerline, float(sleeper_chainage))
-            top_z = float(sleeper_center[2]) - float(sleeper["top_below_rail_m"])
-            sleeper_meshes.append(
-                oriented_box(
-                    sleeper_center,
-                    tangent,
-                    float(sleeper["length_m"]),
-                    float(sleeper["width_m"]),
-                    top_z - float(sleeper["height_m"]),
-                    top_z,
-                )
-            )
-        sleeper_id = f"{track_id}-SLEEPERS"
-        sleeper_vertices, sleeper_faces = _merge_meshes(sleeper_meshes)
-        writer.add_mesh(sleeper_id, sleeper_vertices, sleeper_faces, "SleeperConcrete")
-        visible_node_ids.append(sleeper_id)
-        component_ids.append(sleeper_id)
-        assets.append(
-            _asset(
-                sleeper_id,
-                "sleeper_group",
-                "global_phase_regularized",
-                "rule_inferred",
-                float(config["default_inferred_confidence"]),
-                midpoint,
-                graph_reference,
-                {
-                    **sleeper,
-                    "count": len(sleeper_values),
-                    "phase_chainage_m": float(global_config.get("sleeper_phase_chainage_m", 0.0)),
-                    "first_chainage_m": float(sleeper_values[0]),
-                    "last_chainage_m": float(sleeper_values[-1]),
-                },
-                obj_path,
-                node=sleeper_id,
-                limitations=["Sleeper locations are globally regularized, not individually surveyed"],
-            )
-        )
-
+        sleeper_count = 0
+        sleeper_spacing_deltas: list[float] = []
+        sleeper_interval_counts: list[dict[str, Any]] = []
         bed = config["track_bed"]
         bed_profile = np.asarray(
             [
@@ -722,26 +832,155 @@ def build_track_graph_mesh(
             ],
             dtype=np.float64,
         )
-        bed_id = f"{track_id}-BED"
-        bed_vertices, bed_faces = sweep_mesh(centerline, bed_profile)
-        writer.add_mesh(bed_id, bed_vertices, bed_faces, "Ballast")
-        visible_node_ids.append(bed_id)
-        component_ids.append(bed_id)
-        assets.append(
-            _asset(
-                bed_id,
-                "track_bed",
-                "parametric_ballast",
-                "rule_inferred",
-                float(config["default_inferred_confidence"]),
-                midpoint,
-                graph_reference,
-                {**bed, "track_id": track_id},
-                obj_path,
-                node=bed_id,
-                limitations=["Ballast section is a configurable approximation"],
+        for interval_index, interval in enumerate(evidence_intervals, start=1):
+            interval_start = float(interval["chainage_start_m"])
+            interval_end = float(interval["chainage_end_m"])
+            interval_midpoint = (interval_start + interval_end) / 2.0
+            interval_centerline = _polyline_interval(
+                chainages,
+                centerline,
+                interval_start,
+                interval_end,
             )
-        )
+            sleeper_values = _sleeper_chainages(
+                interval_start,
+                interval_end,
+                float(sleeper["spacing_m"]),
+                float(global_config.get("sleeper_phase_chainage_m", 0.0)),
+            )
+            sleeper_centers = _sample_centerline(
+                chainages, centerline, sleeper_values
+            )
+            sleeper_meshes: list[tuple[np.ndarray, list[tuple[int, ...]]]] = []
+            for sleeper_chainage, sleeper_center in zip(
+                sleeper_values, sleeper_centers
+            ):
+                tangent = _sample_tangent(
+                    chainages, centerline, float(sleeper_chainage)
+                )
+                top_z = float(sleeper_center[2]) - float(
+                    sleeper["top_below_rail_m"]
+                )
+                sleeper_meshes.append(
+                    oriented_box(
+                        sleeper_center,
+                        tangent,
+                        float(sleeper["length_m"]),
+                        float(sleeper["width_m"]),
+                        top_z - float(sleeper["height_m"]),
+                        top_z,
+                    )
+                )
+            sleeper_id = _interval_component_id(
+                track_id,
+                "SLEEPERS",
+                interval,
+                interval_index,
+                len(evidence_intervals),
+            )
+            sleeper_vertices, sleeper_faces = _merge_meshes(sleeper_meshes)
+            writer.add_mesh(
+                sleeper_id,
+                sleeper_vertices,
+                sleeper_faces,
+                (
+                    "SleeperConcrete"
+                    if interval["evidence_level"] == "observed"
+                    else "SleeperConcreteInferred"
+                ),
+            )
+            visible_node_ids.append(sleeper_id)
+            component_ids.append(sleeper_id)
+            assets.append(
+                _asset(
+                    sleeper_id,
+                    "sleeper_group",
+                    "global_phase_regularized_evidence_clipped",
+                    "rule_inferred",
+                    float(config["default_inferred_confidence"]),
+                    interval_midpoint,
+                    graph_reference,
+                    {
+                        **sleeper,
+                        "track_id": track_id,
+                        "count": len(sleeper_values),
+                        "phase_chainage_m": float(
+                            global_config.get("sleeper_phase_chainage_m", 0.0)
+                        ),
+                        "first_chainage_m": float(sleeper_values[0]),
+                        "last_chainage_m": float(sleeper_values[-1]),
+                        "chainage_start_m": interval_start,
+                        "chainage_end_m": interval_end,
+                        "support_evidence_level": interval["evidence_level"],
+                        "source_observation_ids": interval[
+                            "source_observation_ids"
+                        ],
+                    },
+                    obj_path,
+                    node=sleeper_id,
+                    limitations=[
+                        "Sleeper locations are globally regularized, not individually surveyed",
+                        "Sleeper generation is clipped to explicit rail evidence intervals",
+                    ],
+                )
+            )
+            sleeper_count += len(sleeper_values)
+            sleeper_spacing_deltas.extend(np.diff(sleeper_values).tolist())
+            sleeper_interval_counts.append(
+                {
+                    "chainage_start_m": interval_start,
+                    "chainage_end_m": interval_end,
+                    "count": len(sleeper_values),
+                }
+            )
+
+            bed_id = _interval_component_id(
+                track_id,
+                "BED",
+                interval,
+                interval_index,
+                len(evidence_intervals),
+            )
+            bed_vertices, bed_faces = sweep_mesh(interval_centerline, bed_profile)
+            writer.add_mesh(
+                bed_id,
+                bed_vertices,
+                bed_faces,
+                (
+                    "Ballast"
+                    if interval["evidence_level"] == "observed"
+                    else "BallastInferred"
+                ),
+            )
+            visible_node_ids.append(bed_id)
+            component_ids.append(bed_id)
+            assets.append(
+                _asset(
+                    bed_id,
+                    "track_bed",
+                    "parametric_ballast_evidence_clipped",
+                    "rule_inferred",
+                    float(config["default_inferred_confidence"]),
+                    interval_midpoint,
+                    graph_reference,
+                    {
+                        **bed,
+                        "track_id": track_id,
+                        "chainage_start_m": interval_start,
+                        "chainage_end_m": interval_end,
+                        "support_evidence_level": interval["evidence_level"],
+                        "source_observation_ids": interval[
+                            "source_observation_ids"
+                        ],
+                    },
+                    obj_path,
+                    node=bed_id,
+                    limitations=[
+                        "Ballast section is a configurable approximation",
+                        "Track-bed generation is clipped to explicit rail evidence intervals",
+                    ],
+                )
+            )
 
         has_inferred_rail = any(
             interval["evidence_level"] != "observed"
@@ -758,6 +997,12 @@ def build_track_graph_mesh(
         aggregate_limitations = [
             "Aggregate asset; components remain candidate until Mesh review"
         ]
+        source_evidence_gaps = _evidence_interval_gaps(source_evidence_intervals)
+        evidence_gaps = _evidence_interval_gaps(evidence_intervals)
+        if evidence_gaps:
+            aggregate_limitations.append(
+                "Unobserved gaps remain empty; rails, sleepers and track bed are not force-connected"
+            )
         if has_inferred_rail:
             aggregate_limitations.append(
                 "Track includes orange rule-inferred rail intervals; inspect parameters.evidence_intervals"
@@ -781,6 +1026,10 @@ def build_track_graph_mesh(
                     "chainage_end_m": float(chainages[-1]),
                     "component_ids": component_ids,
                     "evidence_intervals": evidence_intervals,
+                    "source_evidence_intervals": source_evidence_intervals,
+                    "inferred_gap_hypotheses": inferred_gap_intervals,
+                    "source_unobserved_gaps": source_evidence_gaps,
+                    "unobserved_gaps": evidence_gaps,
                 },
                 obj_path,
                 limitations=aggregate_limitations,
@@ -796,7 +1045,16 @@ def build_track_graph_mesh(
                     "to": component_id,
                 }
             )
-        spacing_deltas = np.diff(sleeper_values)
+        source_supported_chainage_length = sum(
+            float(interval["chainage_end_m"])
+            - float(interval["chainage_start_m"])
+            for interval in source_evidence_intervals
+        )
+        supported_chainage_length = sum(
+            float(interval["chainage_end_m"])
+            - float(interval["chainage_start_m"])
+            for interval in evidence_intervals
+        )
         build_stats.append(
             {
                 "track_id": track_id,
@@ -804,9 +1062,26 @@ def build_track_graph_mesh(
                 "chainage_end_m": float(chainages[-1]),
                 "length_m": length,
                 "centerline_point_count": len(centerline),
-                "sleeper_count": len(sleeper_values),
-                "sleeper_minimum_spacing_m": float(spacing_deltas.min()) if len(spacing_deltas) else None,
-                "sleeper_maximum_spacing_m": float(spacing_deltas.max()) if len(spacing_deltas) else None,
+                "source_supported_chainage_length_m": source_supported_chainage_length,
+                "supported_chainage_length_m": supported_chainage_length,
+                "source_unobserved_gap_count": len(source_evidence_gaps),
+                "source_unobserved_gaps": source_evidence_gaps,
+                "inferred_gap_hypothesis_count": len(inferred_gap_intervals),
+                "inferred_gap_hypotheses": inferred_gap_intervals,
+                "unobserved_gap_count": len(evidence_gaps),
+                "unobserved_gaps": evidence_gaps,
+                "sleeper_count": sleeper_count,
+                "sleeper_interval_counts": sleeper_interval_counts,
+                "sleeper_minimum_spacing_m": (
+                    float(min(sleeper_spacing_deltas))
+                    if sleeper_spacing_deltas
+                    else None
+                ),
+                "sleeper_maximum_spacing_m": (
+                    float(max(sleeper_spacing_deltas))
+                    if sleeper_spacing_deltas
+                    else None
+                ),
                 "visible_node_ids": component_ids,
                 "centerline_quality": value["centerline_quality"],
                 "evidence_intervals": evidence_intervals,
@@ -1057,8 +1332,25 @@ def build_track_graph_mesh(
     report = {
         "schema_version": "railway.track-graph-mesh-build.v1",
         "project_id": project.project_id,
-        "status": "review_required",
-        "automatic_checks_passed": True,
+        "status": (
+            "candidate_review_required_nonpassing_source_audit"
+            if candidate_only_nonpassing_audit and not recorded_audit_passed
+            else "review_required"
+        ),
+        "automatic_checks_passed": recorded_audit_passed and current_audit_passed,
+        "automatic_mesh_checks_passed": True,
+        "formal_release": False,
+        "candidate_only_nonpassing_audit": candidate_only_nonpassing_audit,
+        "include_inferred_gap_hypotheses": include_inferred_gap_hypotheses,
+        "maximum_inferred_gap_m": (
+            float(maximum_inferred_gap_m)
+            if include_inferred_gap_hypotheses
+            else None
+        ),
+        "source_track_graph_audit_status": recorded_audit.get("status"),
+        "current_track_graph_audit_status": current_audit.get("status"),
+        "source_track_graph_nonpassing_checks": recorded_nonpassing_checks,
+        "current_track_graph_nonpassing_checks": current_nonpassing_checks,
         "source_track_graph": str(graph_path),
         "source_track_graph_sha256": graph_hash,
         "source_track_graph_audit": str(graph_audit_path),
@@ -1083,7 +1375,21 @@ def build_track_graph_mesh(
             "Automatic topology and OBJ checks passed, but fixed-view Mesh review is still required.",
             "Sleepers and ballast are rule-inferred parametric assets.",
             "Rule-inferred rail intervals are separate orange mesh objects and registry assets.",
+            *(
+                [
+                    "Bounded source-evidence gaps are rendered only as orange candidate hypotheses; the source gaps remain explicit in each track report."
+                ]
+                if include_inferred_gap_hypotheses
+                else []
+            ),
             "Configured turnout connectors are orange display completions; exact switch railwork remains unresolved.",
+            *(
+                [
+                    "The source TrackGraph has non-passing evidence/measurement checks; this output is candidate-only and cannot enter the canonical registry or formal release.",
+                ]
+                if candidate_only_nonpassing_audit and not recorded_audit_passed
+                else []
+            ),
         ],
     }
     write_json(report_path, report)

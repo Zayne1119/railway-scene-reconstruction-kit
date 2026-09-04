@@ -1,0 +1,9 @@
+{
+  "schema_version": "railway.platform-gap-point-evidence-settings.v1",
+  "surface_exclusion_offset_m": 0.15,
+  "maximum_above_surface_m": 3.0,
+  "maximum_below_surface_m": 3.0,
+  "minimum_directional_point_density_per_m2": 20.0,
+  "minimum_vertical_span_m": 0.5,
+  "directional_density_dominance_ratio": 1.5
+}

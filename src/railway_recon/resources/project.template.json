@@ -21,6 +21,8 @@
   "workspace": {
     "manifests": "workspace/manifests",
     "gates": "workspace/gates",
+    "input_source_manifest": "workspace/manifests/input_sources.generated.json",
+    "filtered_camera_csv": "workspace/manifests/cameras.filtered.csv",
     "segment_manifest": "workspace/manifests/segments.generated.json",
     "segments": "workspace/segments",
     "derived": "workspace/derived",
@@ -51,6 +53,15 @@
   "algorithms": {
     "rail_detection": "rail_detection.json",
     "linear_detection": "linear_detection.json",
+    "vertical_hypotheses": "vertical_hypotheses.json",
+    "canopy_structure": "canopy_structure.json",
+    "canopy_photo_evidence": "canopy_photo_evidence.json",
+    "platform_surface": "platform_surface.json",
+    "platform_photo_evidence": "platform_photo_evidence.json",
+    "platform_mesh": "platform_mesh.json",
+    "platform_interface_audit": "platform_interface_audit.json",
+    "targeted_canopy_recovery": "targeted_canopy_recovery.json",
+    "vertical_conflict_photo_evidence": "vertical_conflict_photo_evidence.json",
     "track_build": "track_build.json",
     "track_graph": "track_graph.json",
     "projection_calibration": "projection_calibration.json"

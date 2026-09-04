@@ -2,8 +2,20 @@
 
 ## Unreleased
 
-- Added a privacy-safe synthetic GitHub showcase GIF, input/output visual and reproducible 36-second Release video generator.
-- Expanded the repository landing page with verified public-code checks and an explicit public-toolkit versus private-project boundary.
+- Added a two-tier candidate gate for solo, model-first iteration: broken,
+  missing, mismatched or accidentally promoted artifacts remain hard blockers,
+  while legacy metadata and review-process debt become a non-blocking warning
+  queue. The strict release audit remains available for external delivery.
+- Added automated fixed-view triage for every hash-bound render. It verifies
+  safe relative paths, SHA-256 bindings, image decoding, resolution, exposure,
+  contrast and detail, then limits the optional manual spot-check queue to the
+  highest-risk views (six by default).
+- Added `audit-rapid-candidate` and `auto-review-fixed-views` to the unified
+  `railway-recon` CLI, with immutable JSON outputs and regression coverage.
+- Validated the workflow on the Site B v5.0-RC12 candidate: 35/35 renders were
+  readable and hash-correct, zero integrity blockers were found, and five
+  sparse/low-detail diagnostic crops were automatically prioritized without
+  blocking continued modeling.
 
 ## 0.2.0 - 2026-08-29
 

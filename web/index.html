@@ -3,32 +3,87 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Railway Reconstruction Viewer</title>
+    <meta name="theme-color" content="#06131b" />
+    <title>Site B · 铁路重建证据对比</title>
   </head>
   <body>
     <div id="app">
-      <header>
-        <div><span class="eyebrow">EVIDENCE-AWARE MODEL</span><h1 id="title">铁路场景重建验收</h1></div>
-        <div id="status" class="status">初始化</div>
+      <header class="topbar">
+        <div>
+          <span class="eyebrow">SITE B / EVIDENCE-AWARE RECONSTRUCTION</span>
+          <h1 id="title">4.4 公里铁路重建 · 证据与推断对比</h1>
+        </div>
+        <div class="mode-switch" aria-label="模型版本">
+          <button class="mode-button active" data-mode="evidence">证据版</button>
+          <button class="mode-button" data-mode="hypothesis">推断补全版</button>
+        </div>
+        <div id="status" class="status"><i></i><span>正在读取项目</span></div>
       </header>
-      <main>
-        <canvas id="viewport"></canvas>
-        <aside>
-          <label>资产搜索<input id="search" placeholder="ID / 类型" /></label>
-          <select id="evidence">
-            <option value="">全部证据等级</option>
-            <option value="observed">点云观测</option>
-            <option value="photo_interpreted">照片解释</option>
-            <option value="rule_inferred">规则推断</option>
-            <option value="unsupported">证据不足</option>
-          </select>
-          <button id="reset">回到全景</button>
-          <section id="details"><h2>资产信息</h2><p>点击模型构件查看证据、置信度和限制。</p></section>
+
+      <main class="viewer-shell">
+        <canvas id="viewport" aria-label="铁路三维模型视窗"></canvas>
+
+        <aside class="panel layer-panel">
+          <div class="panel-kicker">SCENE CONTROL</div>
+          <h2>场景控制</h2>
+          <div class="control-block">
+            <span class="control-title">专业图层</span>
+            <label><input type="checkbox" data-layer="TRACK" checked /><span class="swatch track"></span>轨道系统</label>
+            <label><input type="checkbox" data-layer="CATENARY" checked /><span class="swatch catenary"></span>接触网支柱</label>
+            <label><input type="checkbox" data-layer="CONDUCTOR" checked /><span class="swatch conductor"></span>接触线与承力索</label>
+            <label><input type="checkbox" data-layer="STATION" checked /><span class="swatch station"></span>站台与雨棚</label>
+            <label><input id="risk-layer" type="checkbox" checked /><span class="swatch risk"></span>风险候选标记</label>
+          </div>
+          <div class="control-block">
+            <span class="control-title">固定视角</span>
+            <div class="view-grid">
+              <button data-view="overview">全线总览</button>
+              <button data-view="station">站场近景</button>
+              <button data-view="track">轨道检查</button>
+              <button data-view="risk">风险定位</button>
+            </div>
+          </div>
+          <form id="search-form" class="search-box">
+            <label for="search">资产检索</label>
+            <div><input id="search" placeholder="资产 ID / 类型" /><button type="submit">定位</button></div>
+          </form>
+          <button id="reset" class="ghost-button">重置场景</button>
         </aside>
+
+        <aside class="panel issue-panel">
+          <div class="panel-kicker">QUALITY REVIEW</div>
+          <div class="panel-heading"><h2>自动质检</h2><span id="issue-count">—</span></div>
+          <div class="issue-tabs">
+            <button class="active" data-issue-tab="wire">导线接缝</button>
+            <button data-issue-tab="mast">支柱候选</button>
+            <button data-issue-tab="gap">轨道缺口</button>
+          </div>
+          <div id="issue-list" class="issue-list"></div>
+          <section id="details" class="details">
+            <h3>资产信息</h3>
+            <p>点击模型构件或右侧问题条目，查看证据来源、位置和处理结论。</p>
+          </section>
+        </aside>
+
+        <div class="legend-note" id="mode-note">仅显示由现有点云与规则闭环支持的几何</div>
         <div id="message" class="message" hidden></div>
+        <div id="loader" class="loader">
+          <div class="loader-card">
+            <span class="panel-kicker">LOADING 4.4 KM SCENE</span>
+            <strong id="loader-label">正在载入模型</strong>
+            <div class="progress"><i id="loader-progress"></i></div>
+          </div>
+        </div>
       </main>
+
+      <footer class="metrics">
+        <div><small>重建走廊</small><strong>4.4 <em>km</em></strong></div>
+        <div><small>接触网支柱</small><strong id="metric-masts">49 / 89</strong><span>入模 / 周期候选</span></div>
+        <div><small>导线接缝</small><strong id="metric-seams">156 / 172</strong><span>通过 / 总计</span></div>
+        <div><small>推断轨道</small><strong id="metric-gaps">950 <em>m</em></strong><span>6 个有界缺口</span></div>
+        <div><small>网格体检</small><strong id="metric-mesh">PASS</strong><span>无无效与重复三角面</span></div>
+      </footer>
     </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
-

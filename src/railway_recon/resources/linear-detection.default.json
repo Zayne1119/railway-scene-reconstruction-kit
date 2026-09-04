@@ -3,6 +3,9 @@
     "xy_bin_m": 0.15,
     "minimum_z_span_m": 4.0,
     "minimum_cell_points": 12,
+    "vertical_z_bin_m": 0.25,
+    "minimum_vertical_occupied_ratio": 0.45,
+    "maximum_vertical_gap_m": 1.0,
     "maximum_footprint_m": 1.5,
     "minimum_component_points": 30
   },
@@ -20,4 +23,3 @@
     "candidate_half_height_m": 0.20
   }
 }
-

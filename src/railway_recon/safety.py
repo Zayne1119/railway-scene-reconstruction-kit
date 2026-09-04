@@ -12,7 +12,7 @@ BANNED_EXTENSIONS = {
 BANNED_NAMES = {"camera.csv", ".env", "hosting.json"}
 IGNORED_PARTS = {
     ".git", ".venv", "node_modules", "dist", ".next", ".pytest_cache",
-    ".ruff_cache", "__pycache__", "projects", "runs",
+    ".ruff_cache", ".uv-cache", "__pycache__", "projects", "runs",
 }
 IGNORED_PREFIXES = {("benchmarks", "local")}
 TEXT_EXTENSIONS = {

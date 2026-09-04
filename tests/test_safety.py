@@ -29,3 +29,14 @@ class SafetyTests(unittest.TestCase):
                 '{"source":"D:\\\\Railway\\\\private.laz"}', encoding="utf-8"
             )
             self.assertTrue(safety_check(root)["passed"])
+
+    def test_safety_skips_local_dependency_cache(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            cache = root / ".uv-cache" / "archive"
+            cache.mkdir(parents=True)
+            (cache / "large-secret-looking.bin").write_bytes(b"x" * 1024)
+            (cache / "example.py").write_text(
+                "api" + '_key = "dependency-fixture-value"\n', encoding="utf-8"
+            )
+            self.assertTrue(safety_check(root, maximum_file_bytes=128)["passed"])

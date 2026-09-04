@@ -8,7 +8,7 @@
     "ground_truth_id": {"type": "string", "minLength": 3},
     "dataset_id": {"type": "string", "minLength": 3},
     "split_id": {"type": "string", "minLength": 3},
-    "truth_level": {"enum": ["GT-L0_survey", "GT-L1_observed_consensus", "GT-L2_expert_ledger", "GT-L3_pseudo"]},
+    "truth_level": {"enum": ["GT-L0_survey", "GT-L1_observed_consensus", "GT-L1S_observed_single_reviewer", "GT-L2_expert_ledger", "GT-L3_pseudo"]},
     "status": {"enum": ["draft", "locked", "adjudicated"]},
     "instances": {
       "type": "array",

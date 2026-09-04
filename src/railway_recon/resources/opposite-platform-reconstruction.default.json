@@ -1,0 +1,64 @@
+{
+  "schema_version": "railway.opposite-platform-reconstruction-settings.v1",
+  "analysis_padding_m": 0.5,
+  "minimum_accepted_configurations": 3,
+  "selected_configuration_id": "GRID050-P04-CLOSE2",
+  "maximum_rail_side_spread_m": 1.0,
+  "maximum_median_elevation_spread_m": 0.1,
+  "maximum_boundary_extrapolation_m": 1.0,
+  "maximum_fit_gap_m": 0.25,
+  "rail_side_clamp_half_width_m": 0.35,
+  "inferred_platform_thickness_m": 0.35,
+  "observed_top_confidence": 0.84,
+  "inferred_volume_confidence": 0.55,
+  "density_configurations": [
+    {
+      "id": "GRID050-P04-CLOSE1",
+      "surface_grid_m": 0.5,
+      "minimum_cell_points": 4,
+      "binary_closing_iterations": 1,
+      "minimum_component_cells": 10,
+      "minimum_fit_segment_cells": 5
+    },
+    {
+      "id": "GRID050-P04-CLOSE2",
+      "surface_grid_m": 0.5,
+      "minimum_cell_points": 4,
+      "binary_closing_iterations": 2,
+      "minimum_component_cells": 10,
+      "minimum_fit_segment_cells": 5
+    },
+    {
+      "id": "GRID075-P08-CLOSE1",
+      "surface_grid_m": 0.75,
+      "minimum_cell_points": 8,
+      "binary_closing_iterations": 1,
+      "minimum_component_cells": 10,
+      "minimum_fit_segment_cells": 5
+    },
+    {
+      "id": "GRID075-P08-CLOSE2",
+      "surface_grid_m": 0.75,
+      "minimum_cell_points": 8,
+      "binary_closing_iterations": 2,
+      "minimum_component_cells": 10,
+      "minimum_fit_segment_cells": 5
+    },
+    {
+      "id": "GRID100-P12-CLOSE1",
+      "surface_grid_m": 1.0,
+      "minimum_cell_points": 12,
+      "binary_closing_iterations": 1,
+      "minimum_component_cells": 8,
+      "minimum_fit_segment_cells": 5
+    },
+    {
+      "id": "GRID100-P12-CLOSE2",
+      "surface_grid_m": 1.0,
+      "minimum_cell_points": 12,
+      "binary_closing_iterations": 2,
+      "minimum_component_cells": 8,
+      "minimum_fit_segment_cells": 5
+    }
+  ]
+}

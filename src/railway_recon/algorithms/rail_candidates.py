@@ -19,6 +19,7 @@ from ..geometry import (
     fit_segment_corridor_frame,
 )
 from ..io import load_json, write_json
+from ..multi_source import effective_camera_csv_path
 
 
 def _robust_linear_fit(x: np.ndarray, y: np.ndarray) -> dict[str, float | int]:
@@ -385,9 +386,7 @@ def _core_longitudinal_context(
         raise ValueError(f"Segment is not present in the manifest: {segment_id}")
     chainage_start = float(segment["chainage_start_m"])
     chainage_end = float(segment["chainage_end_m"])
-    camera_path = project.input_path("camera_csv")
-    if camera_path is None or not camera_path.is_file():
-        raise FileNotFoundError(camera_path)
+    camera_path = effective_camera_csv_path(project)
     trajectory = camera_trajectory(load_camera_rows(camera_path))
     distances = np.asarray([item["distance_m"] for item in trajectory], dtype=np.float64)
     x = np.asarray([item["x"] for item in trajectory], dtype=np.float64)

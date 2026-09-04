@@ -1,0 +1,5 @@
+{
+  "schema_version": "railway.platform-interface-audit-settings.v1",
+  "vertical_base_contact_tolerance_m": 0.08,
+  "maximum_adjacent_platform_edge_jump_m": 0.4
+}

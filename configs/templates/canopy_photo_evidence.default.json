@@ -1,0 +1,16 @@
+{
+  "schema_version": "railway.canopy-photo-evidence-settings.v1",
+  "crop_width_px": 720,
+  "crop_height_px": 480,
+  "transverse_probe_half_span_m": 1.0,
+  "column_probe_below_top_m": 2.0,
+  "edge_roi_radius_px": 72,
+  "minimum_transverse_probe_span_px": 5.0,
+  "maximum_camera_distance_m": 90.0,
+  "directional_response_threshold": 0.075,
+  "directional_orientation_ratio_threshold": 0.54,
+  "minimum_trusted_views": 3,
+  "minimum_supported_views": 2,
+  "sheet_tile_width_px": 360,
+  "sheet_tile_height_px": 300
+}

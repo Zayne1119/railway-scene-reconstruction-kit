@@ -1,0 +1,16 @@
+{
+  "schema_version": "railway.corridor-column-grid-settings.v1",
+  "minimum_seed_count": 2,
+  "minimum_column_height_m": 3.5,
+  "maximum_column_height_m": 7.0,
+  "minimum_vertical_occupied_ratio": 0.85,
+  "minimum_absolute_cross_position_m": 2.0,
+  "maximum_absolute_cross_position_m": 40.0,
+  "nominal_column_spacing_m": 9.0,
+  "minimum_column_spacing_m": 7.0,
+  "maximum_column_spacing_m": 11.0,
+  "seed_grid_match_tolerance_m": 0.75,
+  "maximum_seed_grid_residual_m": 0.75,
+  "require_reviewed_seed_ids": false,
+  "reviewed_seed_ids": []
+}

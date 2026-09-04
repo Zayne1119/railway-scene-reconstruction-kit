@@ -1,0 +1,10 @@
+{
+  "schema_version": "railway.vertical-conflict-photo-evidence-settings.v1",
+  "crop_width_px": 900,
+  "crop_height_px": 720,
+  "maximum_camera_distance_m": 100.0,
+  "minimum_projected_height_px": 20.0,
+  "minimum_trusted_reviewable_views": 2,
+  "sheet_tile_width_px": 450,
+  "sheet_tile_height_px": 400
+}

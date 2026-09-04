@@ -86,6 +86,30 @@ index,timestamp,file,x,y,z,rot_x,rot_y,rot_z
 
 其中 `rot_x/rot_y/rot_z` 在基础审计中可为空，但如果要做照片投影则必须补齐，并明确角度单位、欧拉顺序和旋转方向。不要用真实数据覆盖 `configs/templates/camera.example.csv`。
 
+如果现场交付的是连续的多块 LAS/LAZ，不要先手工合并。将单文件配置：
+
+```json
+"point_cloud": "input/pointcloud/site.laz"
+```
+
+替换为：
+
+```json
+"point_clouds": [
+  {"id": "tile-001", "path": "input/pointcloud/tile-001.laz", "priority": 0},
+  {"id": "tile-002", "path": "input/pointcloud/tile-002.laz", "priority": 1}
+]
+```
+
+多块点云项目在输入审计后、规划分段前必须运行：
+
+```powershell
+railway-recon prepare-inputs --project projects/sample_line/project.json
+```
+
+只有生成清单的 `status` 为 `ready_for_segment_planning` 才能继续。详细规则参见
+[多块点云输入、接缝与唯一所有权](MULTI_SOURCE_INPUT_CN.md)。
+
 ## 5. 检查项目配置
 
 打开 `project.json`，先核对：
@@ -202,6 +226,14 @@ railway-recon qa --project projects/sample_line/project.json
 ```powershell
 railway-recon detect-rails --project projects/sample_line/project.json --segment <segment-id>
 railway-recon detect-linear --project projects/sample_line/project.json --segment <segment-id>
+railway-recon classify-vertical --project projects/sample_line/project.json --segment <segment-id>
+railway-recon analyze-canopy --project projects/sample_line/project.json --segment <segment-id>
+railway-recon canopy-photo-evidence --project projects/sample_line/project.json --segment <segment-id> --projection-consensus <consensus.json>
+railway-recon analyze-platform --project projects/sample_line/project.json --segment <segment-id>
+railway-recon platform-photo-evidence --project projects/sample_line/project.json --segment <segment-id> --projection-consensus <consensus.json>
+railway-recon build-platform-mesh --project projects/sample_line/project.json --segment <segment-id> --mesh-gate <platform_mesh_gate.json>
+railway-recon audit-platform-interfaces --project projects/sample_line/project.json --segment <segment-id>
+railway-recon vertical-conflict-photo-evidence --project projects/sample_line/project.json --segment <segment-id> --projection-consensus <consensus.json>
 ```
 
 若相机 CSV 包含旋转字段，可先对代表性相机搜索姿态约定并生成点—全景叠加图：

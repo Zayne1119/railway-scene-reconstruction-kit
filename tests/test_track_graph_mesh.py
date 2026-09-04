@@ -8,7 +8,10 @@ from pathlib import Path
 import numpy as np
 
 from railway_recon.algorithms.track_graph_mesh import (
+    _candidate_inferred_gap_intervals,
+    _evidence_interval_gaps,
     _hermite_turnout_centerline,
+    _interval_component_id,
     _polyline_interval,
     _track_evidence_intervals,
     build_track_graph_mesh,
@@ -23,6 +26,65 @@ from railway_recon.track_graph import build_track_graph
 
 
 class TrackGraphMeshTests(unittest.TestCase):
+    def test_evidence_interval_components_and_gaps_remain_explicit(self) -> None:
+        intervals = [
+            {
+                "chainage_start_m": 0.0,
+                "chainage_end_m": 50.0,
+                "evidence_level": "observed",
+            },
+            {
+                "chainage_start_m": 75.0,
+                "chainage_end_m": 100.0,
+                "evidence_level": "observed",
+            },
+        ]
+
+        self.assertEqual(
+            _interval_component_id("TRACK-1", "BED", intervals[0], 1, 2),
+            "TRACK-1-BED-OBSERVED-001",
+        )
+        self.assertEqual(
+            _evidence_interval_gaps(intervals),
+            [
+                {
+                    "chainage_start_m": 50.0,
+                    "chainage_end_m": 75.0,
+                    "length_m": 25.0,
+                }
+            ],
+        )
+
+    def test_candidate_gap_hypotheses_are_bounded_and_explicit(self) -> None:
+        intervals = [
+            {
+                "chainage_start_m": 0.0,
+                "chainage_end_m": 50.0,
+                "evidence_level": "observed",
+                "source_observation_ids": ["A"],
+            },
+            {
+                "chainage_start_m": 75.0,
+                "chainage_end_m": 100.0,
+                "evidence_level": "observed",
+                "source_observation_ids": ["B"],
+            },
+            {
+                "chainage_start_m": 400.0,
+                "chainage_end_m": 450.0,
+                "evidence_level": "observed",
+                "source_observation_ids": ["C"],
+            },
+        ]
+
+        inferred = _candidate_inferred_gap_intervals(intervals, 50.0)
+
+        self.assertEqual(len(inferred), 1)
+        self.assertEqual(inferred[0]["chainage_start_m"], 50.0)
+        self.assertEqual(inferred[0]["chainage_end_m"], 75.0)
+        self.assertEqual(inferred[0]["evidence_level"], "rule_inferred")
+        self.assertEqual(inferred[0]["source_observation_ids"], ["A", "B"])
+
     def test_evidence_intervals_are_merged_without_hiding_inference(self) -> None:
         observations = [
             {
@@ -219,6 +281,65 @@ class TrackGraphMeshTests(unittest.TestCase):
             self.assertEqual(graph_result["status"], "review_required")
             with self.assertRaisesRegex(ValueError, "audit is not pass"):
                 build_track_graph_mesh(project)
+
+    def test_nonpassing_measurement_audit_can_only_generate_unregistered_candidate(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            project, graph_result = self._project_with_graph(Path(temporary))
+            audit_path = Path(graph_result["output_audit_path"])
+            audit = load_json(audit_path)
+            gauge_check = next(
+                item for item in audit["checks"] if item["id"] == "rail_gauge"
+            )
+            gauge_check["status"] = "fail"
+            gauge_check["failure_count"] = 1
+            gauge_check["failures"] = [{"reason": "test_measurement_failure"}]
+            audit["status"] = "fail"
+            audit["passed"] = False
+            write_json(audit_path, audit)
+
+            report = build_track_graph_mesh(
+                project,
+                update_registry=False,
+                candidate_only_nonpassing_audit=True,
+            )
+
+            self.assertEqual(
+                report["status"],
+                "candidate_review_required_nonpassing_source_audit",
+            )
+            self.assertFalse(report["automatic_checks_passed"])
+            self.assertTrue(report["automatic_mesh_checks_passed"])
+            self.assertFalse(report["formal_release"])
+            self.assertFalse(report["registry_updated"])
+            self.assertEqual(
+                [item["id"] for item in report["source_track_graph_nonpassing_checks"]],
+                ["rail_gauge"],
+            )
+            self.assertFalse(project.workspace_path("asset_registry").exists())
+
+    def test_nonpassing_core_audit_blocks_candidate_mesh(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            project, graph_result = self._project_with_graph(Path(temporary))
+            audit_path = Path(graph_result["output_audit_path"])
+            audit = load_json(audit_path)
+            structure_check = next(
+                item for item in audit["checks"] if item["id"] == "track_graph_structure"
+            )
+            structure_check["status"] = "fail"
+            structure_check["failure_count"] = 1
+            structure_check["failures"] = [{"reason": "test_core_failure"}]
+            audit["status"] = "fail"
+            audit["passed"] = False
+            write_json(audit_path, audit)
+
+            with self.assertRaisesRegex(ValueError, "core audit checks"):
+                build_track_graph_mesh(
+                    project,
+                    update_registry=False,
+                    candidate_only_nonpassing_audit=True,
+                )
 
     def test_graph_edit_after_audit_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

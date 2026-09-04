@@ -24,6 +24,63 @@ def _write_subset(cloud: laspy.LasData, mask: np.ndarray, output: Path) -> None:
     os.replace(temporary, output)
 
 
+def _vertical_cell_continuity(
+    keys: np.ndarray,
+    z: np.ndarray,
+    eligible_cells: np.ndarray,
+    *,
+    cell_count: int,
+    z_bin_m: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Measure occupied height bins and internal gaps for candidate XY cells.
+
+    A minimum/maximum Z span alone cannot distinguish a physical shaft from two
+    unrelated horizontal surfaces at the same XY location.  This helper measures
+    whether returns actually occupy the height interval between both surfaces.
+    """
+    if z_bin_m <= 0.0:
+        raise ValueError("z_bin_m must be positive")
+    occupied_ratio = np.zeros(cell_count, dtype=np.float32)
+    maximum_gap_m = np.full(cell_count, np.inf, dtype=np.float32)
+    occupied_bin_count = np.zeros(cell_count, dtype=np.int32)
+    point_mask = eligible_cells[keys]
+    if not np.any(point_mask):
+        return occupied_ratio, maximum_gap_m, occupied_bin_count
+
+    selected_keys = keys[point_mask]
+    selected_z = z[point_mask]
+    z_origin = math.floor(float(selected_z.min()) / z_bin_m) * z_bin_m
+    z_indexes = np.floor((selected_z - z_origin) / z_bin_m).astype(np.int64)
+    z_bin_count = int(z_indexes.max()) + 1
+    packed = selected_keys.astype(np.int64) * z_bin_count + z_indexes
+    occupied = np.unique(packed)
+    occupied_cells = occupied // z_bin_count
+    occupied_z = occupied % z_bin_count
+    occupied_bin_count = np.bincount(
+        occupied_cells, minlength=cell_count
+    ).astype(np.int32, copy=False)
+
+    first = np.full(cell_count, z_bin_count, dtype=np.int64)
+    last = np.full(cell_count, -1, dtype=np.int64)
+    np.minimum.at(first, occupied_cells, occupied_z)
+    np.maximum.at(last, occupied_cells, occupied_z)
+    expected = np.maximum(1, last - first + 1)
+    valid = occupied_bin_count > 0
+    occupied_ratio[valid] = occupied_bin_count[valid] / expected[valid]
+
+    maximum_missing_bins = np.zeros(cell_count, dtype=np.int64)
+    if len(occupied) > 1:
+        same_cell = occupied_cells[1:] == occupied_cells[:-1]
+        missing = np.maximum(0, occupied_z[1:] - occupied_z[:-1] - 1)
+        np.maximum.at(
+            maximum_missing_bins,
+            occupied_cells[1:][same_cell],
+            missing[same_cell],
+        )
+    maximum_gap_m[valid] = maximum_missing_bins[valid] * z_bin_m
+    return occupied_ratio, maximum_gap_m, occupied_bin_count
+
+
 def _vertical_candidates(
     x: np.ndarray, y: np.ndarray, z: np.ndarray, config: dict[str, Any]
 ) -> tuple[np.ndarray, list[dict[str, Any]]]:
@@ -40,10 +97,33 @@ def _vertical_candidates(
     maximum = np.full(nx * ny, -np.inf, dtype=np.float32)
     np.minimum.at(minimum, keys, z.astype(np.float32))
     np.maximum.at(maximum, keys, z.astype(np.float32))
-    cells = (
+    eligible_cells = (
         ((maximum - minimum) >= float(config["minimum_z_span_m"]))
         & (count >= int(config["minimum_cell_points"]))
-    ).reshape(ny, nx)
+    )
+    continuity_enabled = all(
+        key in config
+        for key in (
+            "vertical_z_bin_m",
+            "minimum_vertical_occupied_ratio",
+            "maximum_vertical_gap_m",
+        )
+    )
+    occupied_ratio = np.zeros(nx * ny, dtype=np.float32)
+    maximum_gap = np.full(nx * ny, np.inf, dtype=np.float32)
+    occupied_bin_count = np.zeros(nx * ny, dtype=np.int32)
+    if continuity_enabled:
+        occupied_ratio, maximum_gap, occupied_bin_count = _vertical_cell_continuity(
+            keys,
+            z,
+            eligible_cells,
+            cell_count=nx * ny,
+            z_bin_m=float(config["vertical_z_bin_m"]),
+        )
+        eligible_cells &= (
+            occupied_ratio >= float(config["minimum_vertical_occupied_ratio"])
+        ) & (maximum_gap <= float(config["maximum_vertical_gap_m"]))
+    cells = eligible_cells.reshape(ny, nx)
     connected, component_count = label(binary_dilation(cells, iterations=1))
     point_components = connected[yi, xi]
     accepted_labels: list[int] = []
@@ -60,6 +140,8 @@ def _vertical_candidates(
         ):
             continue
         accepted_labels.append(component_id)
+        component_keys = np.unique(keys[mask])
+        feature_keys = component_keys[eligible_cells[component_keys]]
         records.append(
             {
                 "id": f"VERTICAL-CANDIDATE-{len(records) + 1:04d}",
@@ -70,6 +152,24 @@ def _vertical_candidates(
                 "height_m": height,
                 "footprint_m": footprint,
                 "point_count": point_count,
+                "features": {
+                    "vertical_continuity_gate_applied": continuity_enabled,
+                    "vertical_occupied_ratio": (
+                        float(np.median(occupied_ratio[feature_keys]))
+                        if continuity_enabled
+                        else None
+                    ),
+                    "maximum_vertical_gap_m": (
+                        float(np.max(maximum_gap[feature_keys]))
+                        if continuity_enabled
+                        else None
+                    ),
+                    "occupied_vertical_bin_count": (
+                        int(np.sum(occupied_bin_count[feature_keys]))
+                        if continuity_enabled
+                        else None
+                    ),
+                },
                 "status": "unclassified_requires_photo_evidence",
             }
         )

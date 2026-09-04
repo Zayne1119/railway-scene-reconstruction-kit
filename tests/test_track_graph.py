@@ -11,12 +11,60 @@ from railway_recon.io import load_json, write_json
 from railway_recon.segments import plan_segments
 from railway_recon.track_graph import (
     _classify_pair_continuity_recovery,
+    _match_observations,
     audit_track_graph,
     build_track_graph,
 )
 
 
 class TrackGraphTests(unittest.TestCase):
+    def test_identity_can_resume_after_one_track_is_temporarily_absent(self) -> None:
+        def observation(
+            observation_id: str,
+            segment_id: str,
+            local_track_id: str,
+            start: float,
+            end: float,
+            lateral: float,
+        ) -> dict[str, Any]:
+            return {
+                "id": observation_id,
+                "segment_id": segment_id,
+                "local_track_id": local_track_id,
+                "chainage_start_m": start,
+                "chainage_end_m": end,
+                "lateral_offset_m": lateral,
+                "gauge_m": 1.435,
+                "rail_top_z_m": 20.0,
+                "direction_dot": 1.0,
+            }
+
+        batches = [
+            [
+                observation("a:1", "a", "TRACK-0001", 0.0, 50.0, -6.0),
+                observation("a:2", "a", "TRACK-0002", 0.0, 50.0, -1.0),
+            ],
+            [observation("b:1", "b", "TRACK-0001", 50.0, 100.0, -6.0)],
+            [
+                observation("c:1", "c", "TRACK-0001", 100.0, 150.0, -6.0),
+                observation("c:2", "c", "TRACK-0002", 100.0, 150.0, -1.0),
+            ],
+        ]
+        events = _match_observations(
+            batches,
+            {
+                "matching": {
+                    "maximum_identity_gap_m": 60.0,
+                    "maximum_lateral_difference_m": 1.0,
+                    "maximum_vertical_difference_m": 0.5,
+                    "maximum_gauge_difference_m": 0.15,
+                }
+            },
+        )
+
+        self.assertEqual(batches[2][1]["global_track_id"], "TRACK-0002")
+        self.assertEqual(events[1]["dormant_match_count"], 1)
+
     def test_pair_recovery_uses_only_adjacent_same_track_pass_evidence(self) -> None:
         settings = {
             "quality": {
@@ -195,6 +243,29 @@ class TrackGraphTests(unittest.TestCase):
             self.assertEqual(len(graph["seams"]), 1)
             self.assertTrue(audit["passed"])
 
+    def test_single_segment_curation_preserves_source_track_id(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            project, _ = self._project(root)
+            report_path = self._report(
+                project.workspace_path("reports") / "curated.json",
+                "s0000_0050m",
+                25.0,
+                centers=[0.0, 4.0],
+            )
+            report = load_json(report_path)
+            report["rail_pairs"] = [
+                item for item in report["rail_pairs"] if item["track_id"] == "TRACK-0002"
+            ]
+            write_json(report_path, report)
+            result = build_track_graph(project, [("s0000_0050m", report_path)])
+            graph = load_json(Path(result["output_graph_path"]))
+            self.assertEqual([item["id"] for item in graph["tracks"]], ["TRACK-0002"])
+            self.assertEqual(
+                [item["global_track_id"] for item in graph["observations"]],
+                ["TRACK-0002"],
+            )
+
     def test_reversed_segment_fails_without_force_connecting(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             _, result, graph, audit = self._build(Path(temporary), reversed_second=True)
@@ -343,6 +414,29 @@ class TrackGraphTests(unittest.TestCase):
             )
             self.assertEqual(check["status"], "pass")
 
+    def test_fixed_center_point_support_satisfies_observation_support_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            project, _, graph, _ = self._build(Path(temporary))
+            observation = graph["observations"][0]
+            observation.update(
+                {
+                    "evidence_level": "observed",
+                    "support_ratio": None,
+                    "targeted_recovery_support": {"joint_support_ratio": 0.95},
+                }
+            )
+            for edge in graph["edges"]:
+                if edge.get("source_observation_id") == observation["id"]:
+                    edge["evidence_level"] = "observed"
+            settings = load_json(
+                project.resolve(project.value["algorithms"]["track_graph"])
+            )
+            audit = audit_track_graph(graph, settings)
+            check = next(
+                item for item in audit["checks"] if item["id"] == "observation_support"
+            )
+            self.assertEqual(check["status"], "pass")
+
     def test_unreviewed_geometry_never_reports_pass(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             _, result, _, audit = self._build(Path(temporary), reviewed=False)
@@ -399,6 +493,41 @@ class TrackGraphTests(unittest.TestCase):
             audit = load_json(Path(result["output_audit_path"]))
             check = next(item for item in audit["checks"] if item["id"] == "rail_top_crosslevel")
             self.assertEqual(check["status"], "fail")
+
+    def test_reported_and_fitted_crosslevel_disagreement_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            project, _ = self._project(root)
+            reports = project.workspace_path("reports")
+            first = self._report(
+                reports / "a.json",
+                "s0000_0050m",
+                25.0,
+                rail_z_difference_m=0.15,
+            )
+            second = self._report(
+                reports / "b.json",
+                "s0050_0100m",
+                75.0,
+                rail_z_difference_m=0.15,
+            )
+            for path in (first, second):
+                value = load_json(path)
+                value["rail_pairs"][0]["rail_top_crosslevel_m"] = 0.01
+                write_json(path, value)
+            result = build_track_graph(
+                project,
+                [("s0000_0050m", first), ("s0050_0100m", second)],
+            )
+            self.assertEqual(result["status"], "fail")
+            audit = load_json(Path(result["output_audit_path"]))
+            check = next(
+                item
+                for item in audit["checks"]
+                if item["id"] == "rail_top_crosslevel_consistency"
+            )
+            self.assertEqual(check["status"], "fail")
+            self.assertEqual(check["failure_count"], 2)
 
 
 if __name__ == "__main__":

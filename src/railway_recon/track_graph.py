@@ -13,6 +13,7 @@ from scipy.optimize import linear_sum_assignment
 from .camera import camera_trajectory, load_camera_rows
 from .config import ProjectConfig
 from .io import load_json, sha256_file, sha256_json, write_json
+from .multi_source import effective_camera_csv_path
 
 ACCEPTED_REVIEW_STATUSES = {
     "accepted",
@@ -96,10 +97,17 @@ def validate_track_graph_bindings(
     project: ProjectConfig, graph: dict[str, Any]
 ) -> list[dict[str, Any]]:
     failures: list[dict[str, Any]] = []
-    camera_path = project.input_path("camera_csv")
+    camera_error: str | None = None
+    try:
+        camera_path = effective_camera_csv_path(project)
+    except (FileNotFoundError, ValueError) as error:
+        camera_path = None
+        camera_error = str(error)
     expected_camera_hash = graph.get("route", {}).get("camera_csv_sha256")
-    if camera_path is None or not camera_path.is_file():
-        failures.append({"reason": "camera_csv_missing", "path": str(camera_path)})
+    if camera_path is None:
+        failures.append(
+            {"reason": "camera_csv_missing_or_stale", "error": camera_error}
+        )
     elif expected_camera_hash != sha256_file(camera_path):
         failures.append(
             {
@@ -275,6 +283,11 @@ def _observation_from_pair(
         "rail_top_start_z_m": z_start,
         "rail_top_end_z_m": z_end,
         "rail_top_crosslevel_m": max(crosslevel_values),
+        "source_reported_rail_top_crosslevel_m": (
+            None
+            if pair.get("rail_top_crosslevel_m") is None
+            else float(pair["rail_top_crosslevel_m"])
+        ),
         "direction_dot": direction_dot,
         "frame_determinant": determinant,
         "support_ratio": support,
@@ -305,24 +318,57 @@ def _match_observations(
 ) -> list[dict[str, Any]]:
     matching = settings["matching"]
     next_track = 1
+    used_track_ids: set[str] = set()
+
+    def allocate_track_id(item: dict[str, Any]) -> str:
+        nonlocal next_track
+        preferred = str(item.get("local_track_id", ""))
+        suffix = preferred.removeprefix("TRACK-")
+        if (
+            preferred.startswith("TRACK-")
+            and len(suffix) == 4
+            and suffix.isdigit()
+            and preferred not in used_track_ids
+        ):
+            used_track_ids.add(preferred)
+            next_track = max(next_track, int(suffix) + 1)
+            return preferred
+        while f"TRACK-{next_track:04d}" in used_track_ids:
+            next_track += 1
+        value = f"TRACK-{next_track:04d}"
+        used_track_ids.add(value)
+        next_track += 1
+        return value
+
     events: list[dict[str, Any]] = []
-    previous: list[dict[str, Any]] = []
+    previous_batch: list[dict[str, Any]] = []
+    active_by_track: dict[str, dict[str, Any]] = {}
     for batch_index, batch in enumerate(batches):
         batch.sort(key=lambda item: item["lateral_offset_m"])
-        if not previous:
+        if not previous_batch:
             for item in batch:
-                item["global_track_id"] = f"TRACK-{next_track:04d}"
-                next_track += 1
-            previous = batch
+                item["global_track_id"] = allocate_track_id(item)
+                active_by_track[str(item["global_track_id"])] = item
+            previous_batch = batch
             continue
 
-        identity_gap = float(batch[0]["chainage_start_m"] - previous[0]["chainage_end_m"])
-        eligible_identity = abs(identity_gap) <= float(matching["maximum_identity_gap_m"])
+        current_start = float(batch[0]["chainage_start_m"])
+        maximum_gap = float(matching["maximum_identity_gap_m"])
+        active_by_track = {
+            track_id: item
+            for track_id, item in active_by_track.items()
+            if abs(current_start - float(item["chainage_end_m"])) <= maximum_gap
+        }
+        active = sorted(active_by_track.values(), key=lambda item: item["lateral_offset_m"])
+        identity_gap = float(
+            batch[0]["chainage_start_m"] - previous_batch[0]["chainage_end_m"]
+        )
+        eligible_identity = bool(active)
         assignments: list[tuple[int, int, float]] = []
-        if eligible_identity and previous and batch:
+        if eligible_identity and batch:
             impossible = 1e9
-            costs = np.full((len(previous), len(batch)), impossible, dtype=np.float64)
-            for row, prior in enumerate(previous):
+            costs = np.full((len(active), len(batch)), impossible, dtype=np.float64)
+            for row, prior in enumerate(active):
                 for column, current in enumerate(batch):
                     lateral = abs(
                         float(current["lateral_offset_m"]) - float(prior["lateral_offset_m"])
@@ -352,7 +398,7 @@ def _match_observations(
         match_records: list[dict[str, Any]] = []
         for row, column, cost in assignments:
             current = batch[column]
-            prior = previous[row]
+            prior = active[row]
             current["global_track_id"] = prior["global_track_id"]
             assigned_current.add(column)
             match_records.append(
@@ -367,8 +413,9 @@ def _match_observations(
             )
         for column, current in enumerate(batch):
             if column not in assigned_current:
-                current["global_track_id"] = f"TRACK-{next_track:04d}"
-                next_track += 1
+                current["global_track_id"] = allocate_track_id(current)
+        for current in batch:
+            active_by_track[str(current["global_track_id"])] = current
 
         ordered = sorted(match_records, key=lambda item: item["previous_lateral_m"])
         crossing = any(
@@ -377,18 +424,24 @@ def _match_observations(
         )
         events.append(
             {
-                "from_segment_id": previous[0]["segment_id"],
+                "from_segment_id": previous_batch[0]["segment_id"],
                 "to_segment_id": batch[0]["segment_id"],
                 "signed_chainage_gap_m": identity_gap,
                 "identity_matching_attempted": eligible_identity,
                 "match_count": len(match_records),
-                "previous_count": len(previous),
+                "previous_count": len(previous_batch),
+                "active_candidate_count": len(active),
+                "dormant_match_count": sum(
+                    item["previous_observation_id"].split(":", maxsplit=1)[0]
+                    != previous_batch[0]["segment_id"]
+                    for item in match_records
+                ),
                 "current_count": len(batch),
                 "order_crossing": crossing,
                 "matches": match_records,
             }
         )
-        previous = batch
+        previous_batch = batch
     return events
 
 
@@ -905,6 +958,40 @@ def audit_track_graph(graph: dict[str, Any], settings: dict[str, Any]) -> dict[s
         )
     )
 
+    maximum_crosslevel_disagreement = float(
+        quality.get("maximum_reported_fitted_crosslevel_disagreement_m", 0.05)
+    )
+    crosslevel_disagreement = [
+        {
+            "observation_id": item["id"],
+            "fitted_rail_top_crosslevel_m": item.get("rail_top_crosslevel_m"),
+            "source_reported_rail_top_crosslevel_m": item.get(
+                "source_reported_rail_top_crosslevel_m"
+            ),
+            "absolute_disagreement_m": abs(
+                float(item["rail_top_crosslevel_m"])
+                - float(item["source_reported_rail_top_crosslevel_m"])
+            ),
+            "maximum_allowed_disagreement_m": maximum_crosslevel_disagreement,
+            "reason": "source_and_fitted_crosslevel_disagree",
+        }
+        for item in observations
+        if item.get("rail_top_crosslevel_m") is not None
+        and item.get("source_reported_rail_top_crosslevel_m") is not None
+        and abs(
+            float(item["rail_top_crosslevel_m"])
+            - float(item["source_reported_rail_top_crosslevel_m"])
+        )
+        > maximum_crosslevel_disagreement
+    ]
+    checks.append(
+        _check(
+            "rail_top_crosslevel_consistency",
+            crosslevel_disagreement,
+            "Source pair statistics and fitted rail-top lines agree within the project limit",
+        )
+    )
+
     candidate_corrections = [
         {
             "observation_id": item["id"],
@@ -922,16 +1009,34 @@ def audit_track_graph(graph: dict[str, Any], settings: dict[str, Any]) -> dict[s
         )
     )
 
-    support = [
-        {"observation_id": item["id"], "support_ratio": item.get("support_ratio")}
-        for item in observations
-        if item.get("evidence_level") == "observed"
-        and (
-            item.get("support_ratio") is None
-            or float(item["support_ratio"])
-            < float(quality["minimum_observation_bin_coverage"])
+    minimum_observation_coverage = float(quality["minimum_observation_bin_coverage"])
+    support = []
+    for item in observations:
+        if item.get("evidence_level") != "observed":
+            continue
+        targeted = item.get("targeted_recovery_support")
+        targeted_ratio = (
+            None
+            if not isinstance(targeted, dict)
+            else targeted.get("joint_support_ratio")
         )
-    ]
+        source_ratio = item.get("support_ratio")
+        source_passed = (
+            source_ratio is not None
+            and float(source_ratio) >= minimum_observation_coverage
+        )
+        targeted_passed = (
+            targeted_ratio is not None
+            and float(targeted_ratio) >= minimum_observation_coverage
+        )
+        if not source_passed and not targeted_passed:
+            support.append(
+                {
+                    "observation_id": item["id"],
+                    "support_ratio": source_ratio,
+                    "targeted_recovery_joint_support_ratio": targeted_ratio,
+                }
+            )
     checks.append(
         _check("observation_support", support, "Rail observations have longitudinal point support")
     )
@@ -1222,9 +1327,7 @@ def build_track_graph(
         raise FileNotFoundError(manifest_path)
     manifest = load_json(manifest_path)
     segment_lookup = {str(item["id"]): item for item in manifest.get("segments", [])}
-    camera_path = project.input_path("camera_csv")
-    if camera_path is None or not camera_path.is_file():
-        raise FileNotFoundError(camera_path)
+    camera_path = effective_camera_csv_path(project)
     trajectory = camera_trajectory(load_camera_rows(camera_path))
     settings = load_track_graph_settings(project)
     route = RouteSampler(

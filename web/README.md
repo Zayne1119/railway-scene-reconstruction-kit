@@ -1,27 +1,45 @@
-# Config-driven Web viewer
+# Railway evidence / hypothesis QA viewer
 
-The viewer is intentionally model-agnostic. It loads `public/project.json`, one GLB and one asset registry. Production files stay outside this source repository and are copied into an approved deployment package only after review.
+This local Three.js dashboard loads one integrated GLB scene plus the pipeline's QA reports. OBJ/MTL remains available as a fallback, and production geometry is not copied into the source repository.
 
-```powershell
-cd web
-npm install
-Copy-Item public/project.example.json public/project.json
-npm run dev
+Features:
+
+- evidence / bounded-hypothesis comparison without loading two copies of the model;
+- a Meshopt-compressed Web LOD for fast review, while the full GLB remains unchanged;
+- discipline layers for track, catenary, conductor and station geometry;
+- automatic issue lists for conductor seams, withheld catenary candidates and inferred track gaps;
+- asset ID/type search, click selection and fixed QA views;
+- report-driven metrics and risk markers.
+
+## Run locally
+
+From the web directory, copy `public/project.example.json` to `public/project.json`, then run `npm ci` and `npm run dev`.
+
+Open `http://localhost:3010`. The dev server listens on all interfaces for trusted LAN review. Never expose the project or its models publicly without the project owner's explicit approval.
+
+An alternate local config can be selected without replacing the default project:
+
+```text
+http://localhost:3010/?project=project.track-boundary.json
 ```
 
-Open `http://localhost:3010`. For LAN review, the dev command already listens on all interfaces; allow the port through the firewall only on a trusted private network. Do not publish a site or model without explicit project-owner authorization.
+Only a plain JSON filename is accepted. Paths and external URLs are rejected.
 
-GLB node names should match registry asset IDs, or each node should contain `userData.asset_id`. The page reports missing registry mappings instead of silently presenting unregistered geometry as a valid asset.
+When Blender is unavailable, a named flat-material OBJ can be converted without external runtime dependencies:
 
-## Fail-closed acceptance mode
+```powershell
+python scripts/export_obj_to_web_glb.py --input scene.obj --output scene.web.glb
+```
 
-Generate `public/project.json` with `railway-recon web-release-config`, or fill every release/hash field in `project.example.json`. Then set `acceptance_mode` to `true` or open the page with `?acceptance=1`.
+The converter preserves OBJ object names as GLB nodes and validates node and triangle counts before writing its conversion report.
 
-Acceptance mode stops instead of showing a placeholder when any of these checks fail:
+`public/project.json` is intentionally ignored by Git because it contains local paths. Use forward-slash Vite `/@fs/` URLs and add the data root to `vite.config.js` under `server.fs.allow`.
 
-- config, registry or model cannot be loaded;
-- release ID, model hash, registry hash or asset-set hash differs;
-- the release registry contains a non-accepted asset;
-- a visible Mesh node has no registry mapping.
+## Scene contract
 
-The normal non-acceptance viewer keeps its synthetic placeholder for first-run development only. A placeholder is never an acceptance result.
+- Integrated OBJ object names may start with `TRACK--`, `CATENARY--`, `CONDUCTOR--` or `STATION--`.
+- Candidate scenes may also retain pipeline names such as `TRACKGRAPH--TRACK-`, `SEG*`, `SUPPLEMENTAL-*` and `ADJACENT-*`; the viewer classifies these without renaming the assets.
+- Bounded track hypotheses must include `INFERRED` in their object name.
+- Registry assets are indexed by geometry node, asset ID and the configured namespace-prefixed ID.
+- QA reports remain the source of truth; a risk marker is not a released asset.
+- This viewer is for local candidate review. Formal release acceptance and content-hash validation remain separate pipeline steps.

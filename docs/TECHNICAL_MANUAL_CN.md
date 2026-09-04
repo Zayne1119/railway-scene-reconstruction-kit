@@ -197,6 +197,8 @@ railway-recon segment --project projects/sample/project.json --ids <segment-id>
 7. 恢复照片可见立面；
 8. 将不可见结构保留为 `rule_inferred` 或 `unsupported`。
 
+雨棚恢复必须遵循“语义复核覆盖层—屋面定向搜索—柱网假设—照片反证”的闭环。原始分类保持不可变；等距柱网即使通过局部点云支持，只要多视图投影不对应真实柱，也必须撤销候选几何。失败的柱距、图像寻柱或表面拟合实验应保留为审计记录，不能静默换阈值后继续生成。
+
 代表性相机的姿态约定可先用统一入口搜索：
 
 ```powershell

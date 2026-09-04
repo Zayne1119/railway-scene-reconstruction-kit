@@ -417,27 +417,42 @@ def _resolve_reference(root: Path, reference: str) -> Path:
 def _file_record(root: Path, item: dict[str, Any], full_hash: bool) -> dict[str, Any]:
     reference = str(item["path"])
     path = _resolve_reference(root, reference)
+    exists = path.is_file() or path.is_dir()
     record: dict[str, Any] = {
         "id": item["id"],
         "kind": item["kind"],
         "reference": reference,
         "required": item.get("required", True),
-        "exists": path.is_file(),
+        "exists": exists,
     }
-    if not path.is_file():
+    if not exists:
         return record
-    stat = path.stat()
-    record["bytes"] = stat.st_size
+    if path.is_dir():
+        directory_files = sorted(candidate for candidate in path.rglob("*") if candidate.is_file())
+        directory_payload = [
+            {
+                "path": candidate.relative_to(path).as_posix(),
+                "bytes": candidate.stat().st_size,
+                "sha256": sha256_file(candidate),
+            }
+            for candidate in directory_files
+        ]
+        record["bytes"] = sum(entry["bytes"] for entry in directory_payload)
+        record["file_count"] = len(directory_payload)
+        computed_sha256 = sha256_json(directory_payload)
+    else:
+        record["bytes"] = path.stat().st_size
+        computed_sha256 = sha256_file(path)
     declared = item.get("sha256")
     if full_hash or not declared:
-        record["sha256"] = sha256_file(path)
+        record["sha256"] = computed_sha256
         record["hash_source"] = "computed"
     else:
         record["sha256"] = declared
         record["hash_source"] = "declared"
     expected_bytes = item.get("bytes")
     if expected_bytes is not None:
-        record["size_matches_declared"] = int(expected_bytes) == stat.st_size
+        record["size_matches_declared"] = int(expected_bytes) == record["bytes"]
     return record
 
 

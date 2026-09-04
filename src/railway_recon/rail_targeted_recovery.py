@@ -273,6 +273,19 @@ def apply_targeted_rail_recovery(
         observation["pair_recovery_status"] = "fixed_center_evidence_recovered"
         observation["pair_recovery_support_observation_id"] = None
         observation["targeted_recovery_support"] = evidence["support"]
+        # A rule-inferred center is allowed to become point-supported only after
+        # this command has verified both rails at the exact frozen geometry.
+        # The original evidence class is retained explicitly for provenance.
+        if observation.get("evidence_level") == "rule_inferred":
+            observation["source_evidence_level"] = "rule_inferred"
+            observation["evidence_level"] = "observed"
+            observation["evidence_interpretation"] = "fixed_center_point_supported"
+            for edge in graph.get("edges", []):
+                if str(edge.get("source_observation_id")) != observation_id:
+                    continue
+                edge["source_evidence_level"] = "rule_inferred"
+                edge["evidence_level"] = "observed"
+                edge["evidence_interpretation"] = "fixed_center_point_supported"
     for task in graph.get("pair_continuity_recovery", []):
         observation_id = str(task["observation_id"])
         if observation_id in recovered:
@@ -286,6 +299,10 @@ def apply_targeted_rail_recovery(
         "recovery_report_sha256": sha256_file(recovery_path),
         "recovered_observation_count": len(recovered),
         "geometry_changed": False,
+        "rule_inferred_observations_promoted_after_fixed_center_support": sum(
+            item.get("evidence_interpretation") == "fixed_center_point_supported"
+            for item in observation_lookup.values()
+        ),
     }
     write_json(output_path, graph)
     return output_path

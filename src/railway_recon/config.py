@@ -44,9 +44,7 @@ class ProjectConfig:
         path = self.resolve(value)
         root = self.root.resolve()
         if path != root and root not in path.parents:
-            raise ValueError(
-                f"workspace.{key} must stay inside the project directory: {path}"
-            )
+            raise ValueError(f"workspace.{key} must stay inside the project directory: {path}")
         return path
 
 
@@ -68,22 +66,39 @@ def validate_project_value(value: dict[str, Any]) -> list[str]:
         )
     else:
         required = (
-            "schema_version", "project", "inputs", "workspace", "segmentation",
-            "reconstruction", "quality", "algorithms", "rules",
+            "schema_version",
+            "project",
+            "inputs",
+            "workspace",
+            "segmentation",
+            "reconstruction",
+            "quality",
+            "algorithms",
+            "rules",
         )
-        errors.extend(f"<root>: missing required property '{key}'" for key in required if key not in value)
+        errors.extend(
+            f"<root>: missing required property '{key}'" for key in required if key not in value
+        )
         if value.get("schema_version") != "railway.toolkit.project.v1":
             errors.append("schema_version must be 'railway.toolkit.project.v1'")
         nested_required = {
             "project": ("id", "name", "units", "axis", "crs"),
-            "inputs": ("point_cloud", "camera_csv"),
+            "inputs": ("camera_csv",),
             "workspace": (
-                "manifests", "segment_manifest", "segments", "derived",
-                "asset_registry", "reports", "exports",
+                "manifests",
+                "segment_manifest",
+                "segments",
+                "derived",
+                "asset_registry",
+                "reports",
+                "exports",
             ),
             "segmentation": (
-                "length_m", "corridor_half_width_m", "z_below_camera_m",
-                "z_above_camera_m", "chunk_size_points",
+                "length_m",
+                "corridor_half_width_m",
+                "z_below_camera_m",
+                "z_above_camera_m",
+                "chunk_size_points",
             ),
             "algorithms": (
                 "rail_detection",
@@ -112,6 +127,12 @@ def validate_project_value(value: dict[str, Any]) -> list[str]:
         )
     if project_values.get("axis") != "Z-up":
         errors.append("project.axis must be 'Z-up' in toolkit v0.1")
+    inputs = value.get("inputs")
+    input_values = inputs if isinstance(inputs, dict) else {}
+    has_single = bool(input_values.get("point_cloud"))
+    has_multiple = "point_clouds" in input_values
+    if has_single == has_multiple:
+        errors.append("inputs must configure exactly one of point_cloud or point_clouds")
     return errors
 
 
@@ -156,6 +177,42 @@ def initialize_project(target: str | Path, project_id: str, name: str) -> Path:
     write_json(root / "rules.json", _resource_json("rules.default.json"))
     write_json(root / "rail_detection.json", _resource_json("rail-detection.default.json"))
     write_json(root / "linear_detection.json", _resource_json("linear-detection.default.json"))
+    write_json(
+        root / "vertical_hypotheses.json",
+        _resource_json("vertical-hypotheses.default.json"),
+    )
+    write_json(
+        root / "canopy_structure.json",
+        _resource_json("canopy-structure.default.json"),
+    )
+    write_json(
+        root / "canopy_photo_evidence.json",
+        _resource_json("canopy-photo-evidence.default.json"),
+    )
+    write_json(
+        root / "platform_surface.json",
+        _resource_json("platform-surface.default.json"),
+    )
+    write_json(
+        root / "platform_photo_evidence.json",
+        _resource_json("platform-photo-evidence.default.json"),
+    )
+    write_json(
+        root / "platform_mesh.json",
+        _resource_json("platform-mesh.default.json"),
+    )
+    write_json(
+        root / "platform_interface_audit.json",
+        _resource_json("platform-interface-audit.default.json"),
+    )
+    write_json(
+        root / "vertical_conflict_photo_evidence.json",
+        _resource_json("vertical-conflict-photo-evidence.default.json"),
+    )
+    write_json(
+        root / "targeted_canopy_recovery.json",
+        _resource_json("targeted-canopy-recovery.default.json"),
+    )
     write_json(root / "track_build.json", _resource_json("track-build.default.json"))
     write_json(root / "track_graph.json", _resource_json("track-graph.default.json"))
     write_json(

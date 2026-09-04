@@ -160,10 +160,20 @@ Kd 0.58 0.57 0.54
 Ks 0.08 0.08 0.08
 Ns 8
 
+newmtl SleeperConcreteInferred
+Kd 0.94 0.40 0.10
+Ks 0.04 0.04 0.04
+Ns 6
+
 newmtl Ballast
 Kd 0.36 0.34 0.31
 Ks 0.02 0.02 0.02
 Ns 3
+
+newmtl BallastInferred
+Kd 0.58 0.24 0.08
+Ks 0.01 0.01 0.01
+Ns 2
 """
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")

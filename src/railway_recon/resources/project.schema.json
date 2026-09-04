@@ -30,9 +30,33 @@
     },
     "inputs": {
       "type": "object",
-      "required": ["point_cloud", "camera_csv"],
+      "required": ["camera_csv"],
+      "oneOf": [
+        {
+          "required": ["point_cloud"],
+          "not": {"required": ["point_clouds"]}
+        },
+        {
+          "required": ["point_clouds"],
+          "not": {"required": ["point_cloud"]}
+        }
+      ],
       "properties": {
         "point_cloud": {"type": "string"},
+        "point_clouds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "path"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$"},
+              "path": {"type": "string", "minLength": 1},
+              "priority": {"type": "integer"}
+            },
+            "additionalProperties": false
+          }
+        },
         "camera_csv": {"type": "string"},
         "panorama_root": {"type": ["string", "null"]}
       },
@@ -41,6 +65,10 @@
     "workspace": {
       "type": "object",
       "required": ["manifests", "segment_manifest", "segments", "derived", "asset_registry", "reports", "exports"],
+      "properties": {
+        "input_source_manifest": {"type": "string"},
+        "filtered_camera_csv": {"type": "string"}
+      },
       "additionalProperties": {"type": "string"}
     },
     "segmentation": {
@@ -76,6 +104,15 @@
       "properties": {
         "rail_detection": {"type": "string"},
         "linear_detection": {"type": "string"},
+        "vertical_hypotheses": {"type": "string"},
+        "canopy_structure": {"type": "string"},
+        "canopy_photo_evidence": {"type": "string"},
+        "platform_surface": {"type": "string"},
+        "platform_photo_evidence": {"type": "string"},
+        "platform_mesh": {"type": "string"},
+        "platform_interface_audit": {"type": "string"},
+        "targeted_canopy_recovery": {"type": "string"},
+        "vertical_conflict_photo_evidence": {"type": "string"},
         "track_build": {"type": "string"},
         "track_graph": {"type": "string"},
         "projection_calibration": {"type": "string"}

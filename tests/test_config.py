@@ -17,6 +17,11 @@ class ConfigTests(unittest.TestCase):
                 (root / "sample/input/pointcloud/site.laz").resolve(),
             )
             self.assertTrue((root / "sample/track_graph.json").is_file())
+            self.assertTrue((root / "sample/vertical_hypotheses.json").is_file())
+            self.assertTrue((root / "sample/canopy_structure.json").is_file())
+            self.assertTrue((root / "sample/platform_mesh.json").is_file())
+            self.assertTrue((root / "sample/platform_interface_audit.json").is_file())
+            self.assertTrue((root / "sample/vertical_conflict_photo_evidence.json").is_file())
 
     def test_workspace_cannot_escape_project(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

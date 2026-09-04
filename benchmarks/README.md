@@ -123,3 +123,8 @@ Runtime JSON Schemas are packaged in `src/railway_recon/resources/`:
 - run manifest v2.
 
 See `docs/PAPER_BENCHMARK_CN.md` for the complete Chinese operating procedure.
+
+For the non-mutating Site-A freeze and the three-command prospective Site-B intake,
+see `docs/BEFORE_SECOND_SCENE_CN.md`. The blind B0 result and the calibrated/production
+B1 result are intentionally stored separately; preparing the research benchmark does
+not change production reconstruction defaults.

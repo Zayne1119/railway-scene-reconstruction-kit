@@ -61,6 +61,7 @@ railway-recon benchmark-evaluate `
 
 - `GT-L0_survey`：独立测量或独立检查点；
 - `GT-L1_observed_consensus`：两名标注者依据原始点云和照片形成的一致结果；
+- `GT-L1S_observed_single_reviewer`：单人依据原始证据完成的抽样复核，必须单独披露，不能称为共识真值；
 - `GT-L2_expert_ledger`：专业人员或设备台账确认；
 - `GT-L3_pseudo`：由现有模型派生，只能开发评测器，不能当测试真值。
 

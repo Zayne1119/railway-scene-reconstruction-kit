@@ -1,0 +1,28 @@
+{
+  "schema_version": "railway.corridor-conductor-settings.v1",
+  "maximum_track_cross_difference_m": 0.45,
+  "minimum_longitudinal_coverage": 0.15,
+  "cross_error_weight": 0.7,
+  "coverage_reward_weight": 0.2,
+  "sequence_continuity_cross_weight": 0.75,
+  "sequence_continuity_height_weight": 1.5,
+  "maximum_adjacent_chainage_gap_m": 0.05,
+  "maximum_seam_xy_error_m": 0.50,
+  "maximum_seam_z_error_m": 0.20,
+  "profile_sides": 6,
+  "automatic_candidate_confidence": 0.58,
+  "wire_types": {
+    "contact_wire": {
+      "minimum_height_above_rail_m": 4.6,
+      "maximum_height_above_rail_m": 5.9,
+      "target_height_above_rail_m": 5.3,
+      "display_radius_m": 0.014
+    },
+    "messenger_wire": {
+      "minimum_height_above_rail_m": 6.0,
+      "maximum_height_above_rail_m": 7.3,
+      "target_height_above_rail_m": 6.5,
+      "display_radius_m": 0.012
+    }
+  }
+}

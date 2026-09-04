@@ -15,6 +15,7 @@
     "maximum_frame_determinant_error": 0.001,
     "maximum_gauge_error_m": 0.02,
     "maximum_rail_top_crosslevel_m": 0.20,
+    "maximum_reported_fitted_crosslevel_disagreement_m": 0.05,
     "maximum_candidate_rail_position_correction_m": 0.06,
     "minimum_observation_bin_coverage": 0.20,
     "paired_rail_continuity_gate_enabled": false,

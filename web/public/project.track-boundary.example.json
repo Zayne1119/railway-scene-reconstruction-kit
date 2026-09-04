@@ -1,0 +1,21 @@
+{
+  "title": "Railway track-boundary candidate",
+  "model_glb_url": "/@fs/D:/approved-project/candidate.web.glb",
+  "origin_url": "/@fs/D:/approved-project/model_origin.json",
+  "mesh_audit_url": "/@fs/D:/approved-project/mesh_audit.json",
+  "registry_sources": [
+    {
+      "namespace": "CANDIDATE",
+      "url": "/@fs/D:/approved-project/asset_registry.json"
+    }
+  ],
+  "fixed_views": {
+    "track_boundary": {
+      "target": [0.0, 0.0, 0.0],
+      "eye": [35.0, -25.0, 18.0],
+      "near": 0.05,
+      "far": 5000
+    }
+  },
+  "metric_overrides": []
+}

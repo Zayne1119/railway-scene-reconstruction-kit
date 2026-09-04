@@ -115,6 +115,65 @@ class RailTargetedRecoveryTests(unittest.TestCase):
             )
             self.assertFalse(updated_graph["targeted_pair_recovery"]["geometry_changed"])
 
+    def test_fixed_center_recovery_promotes_rule_inferred_edge_with_provenance(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            graph_path = root / "track-graph.json"
+            recovery_path = root / "recovery.json"
+            output_path = root / "track-graph.recovered.json"
+            observation_id = "s0000_0010m:TRACK-0001"
+            write_json(
+                graph_path,
+                {
+                    "schema_version": "railway.track-graph.v1",
+                    "observations": [
+                        {
+                            "id": observation_id,
+                            "segment_id": "s0000_0010m",
+                            "global_track_id": "TRACK-0001",
+                            "rail_cross_positions_local_m": [-0.75, 0.75],
+                            "evidence_level": "rule_inferred",
+                        }
+                    ],
+                    "edges": [
+                        {
+                            "id": "edge-1",
+                            "source_observation_id": observation_id,
+                            "evidence_level": "rule_inferred",
+                        }
+                    ],
+                    "pair_continuity_recovery": [],
+                },
+            )
+            write_json(
+                recovery_path,
+                {
+                    "schema_version": "railway.targeted-rail-recovery.v1",
+                    "graph_sha256": sha256_file(graph_path),
+                    "recoveries": [
+                        {
+                            "observation_id": observation_id,
+                            "status": "fixed_center_evidence_recovered",
+                            "rail_cross_positions_local_m": [-0.75, 0.75],
+                            "support": {"joint_support_ratio": 1.0},
+                        }
+                    ],
+                },
+            )
+            apply_targeted_rail_recovery(graph_path, recovery_path, output_path)
+            updated = load_json(output_path)
+            observation = updated["observations"][0]
+            edge = updated["edges"][0]
+            self.assertEqual(observation["evidence_level"], "observed")
+            self.assertEqual(observation["source_evidence_level"], "rule_inferred")
+            self.assertEqual(edge["evidence_level"], "observed")
+            self.assertEqual(edge["source_evidence_level"], "rule_inferred")
+            self.assertEqual(
+                updated["targeted_pair_recovery"]
+                ["rule_inferred_observations_promoted_after_fixed_center_support"],
+                1,
+            )
+
     def test_explicit_observation_can_recheck_a_resolved_fixed_center(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

@@ -1,0 +1,15 @@
+{
+  "schema_version": "railway.platform-photo-evidence-settings.v1",
+  "analysis_image_width_px": 1440,
+  "line_projection_samples": 41,
+  "gap_edge_projection_samples": 12,
+  "safety_line_probe_offset_m": 0.8,
+  "edge_band_radius_px": 4,
+  "warm_color_band_radius_px": 3,
+  "minimum_projected_segment_length_px": 8.0,
+  "edge_response_threshold": 0.055,
+  "edge_orientation_ratio_threshold": 0.54,
+  "warm_color_fraction_threshold": 0.18,
+  "minimum_supported_views": 2,
+  "minimum_projected_gap_span_px": 8.0
+}

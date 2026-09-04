@@ -8,6 +8,7 @@ import numpy as np
 from .camera import camera_trajectory, load_camera_rows
 from .config import ProjectConfig
 from .io import load_json
+from .multi_source import effective_camera_csv_path
 
 
 @dataclass(frozen=True)
@@ -105,9 +106,7 @@ def fit_segment_corridor_frame(
     )
     if segment is None:
         raise ValueError(f"Segment is not present in the manifest: {segment_id}")
-    camera_path = project.input_path("camera_csv")
-    if camera_path is None or not camera_path.is_file():
-        raise FileNotFoundError(camera_path)
+    camera_path = effective_camera_csv_path(project)
     trajectory = camera_trajectory(load_camera_rows(camera_path))
     start = float(segment["chainage_start_m"])
     end = float(segment["chainage_end_m"])

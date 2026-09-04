@@ -1,0 +1,32 @@
+{
+  "schema_version": "railway.mesh-seam-reconciliation-settings.v1",
+  "endpoint_search_tolerance_m": 0.1,
+  "endpoint_cluster_tolerance_m": 0.00001,
+  "cap_station_tolerance_m": 0.0001,
+  "maximum_cross_delta_m": 0.5,
+  "maximum_z_delta_m": 0.5,
+  "seams": [
+    {
+      "id": "SEAM-SEGMENT-A-B",
+      "station_m": 25.0,
+      "pairs": [
+        {
+          "left_object": "SEGMENT-A-PLATFORM-TOP",
+          "right_object": "SEGMENT-B-PLATFORM-TOP",
+          "internal_cap_policy": "keep"
+        },
+        {
+          "left_object": "SEGMENT-A-PLATFORM-VOLUME",
+          "right_object": "SEGMENT-B-PLATFORM-VOLUME",
+          "internal_cap_policy": "drop_right_duplicate",
+          "expected_removed_cap_polygon_count": 1
+        },
+        {
+          "left_object": "SEGMENT-A-CANOPY-ROOF",
+          "right_object": "SEGMENT-B-CANOPY-ROOF",
+          "internal_cap_policy": "drop_right_duplicate"
+        }
+      ]
+    }
+  ]
+}

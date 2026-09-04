@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Railway Reconstruction Kit · 代码学习课程</title>
+  <meta name="description" content="铁路场景多模态证据驱动结构化重建项目的代码学习入口、执行地图与第二场景作战手册。">
+  <style>
+    :root {
+      --ink: #e9f5f2;
+      --muted: #8ba5a4;
+      --faint: #557070;
+      --line: rgba(144, 209, 202, .18);
+      --line-strong: rgba(160, 238, 229, .38);
+      --panel: rgba(8, 27, 32, .88);
+      --panel-2: rgba(12, 38, 43, .76);
+      --bg: #031015;
+      --lime: #b7ff48;
+      --aqua: #55e7db;
+      --orange: #ff8a39;
+      --violet: #a88bff;
+      --shadow: 0 24px 80px rgba(0, 0, 0, .35);
+      --radius: 18px;
+      --mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+      --sans: Inter, "Microsoft YaHei UI", "PingFang SC", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 78% 10%, rgba(85, 231, 219, .11), transparent 28rem),
+        radial-gradient(circle at 18% 34%, rgba(183, 255, 72, .06), transparent 24rem),
+        linear-gradient(180deg, #04151b 0%, var(--bg) 68%);
+    }
+
+    body::before {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      content: "";
+      opacity: .36;
+      background-image:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: linear-gradient(to bottom, black, transparent 76%);
+    }
+
+    a { color: inherit; }
+    button, input { font: inherit; }
+    button:focus-visible, a:focus-visible, input:focus-visible {
+      outline: 2px solid var(--lime);
+      outline-offset: 3px;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 292px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 24px 20px;
+      border-right: 1px solid var(--line);
+      background: rgba(3, 16, 21, .86);
+      backdrop-filter: blur(18px);
+      overflow: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .brand-mark {
+      position: relative;
+      width: 42px;
+      height: 42px;
+      border: 1px solid var(--line-strong);
+      border-radius: 12px;
+      background: linear-gradient(145deg, rgba(85,231,219,.16), rgba(183,255,72,.04));
+      overflow: hidden;
+    }
+
+    .brand-mark::before,
+    .brand-mark::after {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      height: 2px;
+      content: "";
+      background: var(--lime);
+      box-shadow: 0 7px 0 var(--aqua), 0 14px 0 rgba(233,245,242,.46);
+      transform: skewY(-18deg);
+    }
+    .brand-mark::before { top: 10px; }
+    .brand-mark::after { top: 15px; opacity: .35; }
+    .brand strong { display: block; letter-spacing: .02em; }
+    .brand small { color: var(--muted); font-family: var(--mono); }
+
+    .search {
+      width: 100%;
+      height: 42px;
+      padding: 0 14px;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(9, 32, 37, .82);
+    }
+    .search::placeholder { color: var(--faint); }
+
+    .nav-label {
+      margin: 22px 8px 10px;
+      color: var(--faint);
+      font: 700 10px/1 var(--mono);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .nav { display: grid; gap: 3px; }
+    .nav a {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 8px;
+      align-items: center;
+      min-height: 40px;
+      padding: 6px 9px;
+      color: var(--muted);
+      text-decoration: none;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      font-size: 13px;
+    }
+    .nav a:hover, .nav a.active {
+      color: var(--ink);
+      border-color: var(--line);
+      background: rgba(85, 231, 219, .07);
+    }
+    .nav a.active .nav-num { color: var(--lime); }
+    .nav-num { color: var(--faint); font: 700 10px/1 var(--mono); }
+
+    .side-note {
+      margin-top: 24px;
+      padding: 13px;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      font-size: 12px;
+      line-height: 1.65;
+    }
+    .side-note b { color: var(--orange); font-family: var(--mono); }
+
+    main { width: min(1420px, 100%); padding: 28px 40px 80px; }
+
+    .hero {
+      position: relative;
+      min-height: 580px;
+      padding: clamp(28px, 5vw, 72px);
+      border: 1px solid var(--line-strong);
+      border-radius: 24px;
+      background:
+        linear-gradient(120deg, rgba(5,22,28,.96), rgba(6,30,35,.76)),
+        repeating-linear-gradient(118deg, transparent 0 36px, rgba(85,231,219,.04) 37px 38px);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero::after {
+      position: absolute;
+      right: -8%;
+      bottom: 4%;
+      width: 60%;
+      height: 42%;
+      content: "";
+      border-top: 1px solid rgba(183,255,72,.55);
+      border-bottom: 1px solid rgba(85,231,219,.28);
+      background: repeating-linear-gradient(90deg, transparent 0 45px, rgba(233,245,242,.15) 46px 49px);
+      transform: perspective(500px) rotateX(62deg) rotateZ(-7deg);
+      transform-origin: bottom right;
+      opacity: .55;
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      position: relative;
+      z-index: 1;
+      color: var(--lime);
+      font: 800 11px/1 var(--mono);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+    h1 {
+      position: relative;
+      z-index: 1;
+      max-width: 920px;
+      margin: 24px 0 18px;
+      font-size: clamp(40px, 6vw, 88px);
+      line-height: .98;
+      letter-spacing: -.045em;
+    }
+    .hero-lead {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+      margin: 0;
+      color: #b7cbca;
+      font-size: clamp(16px, 1.5vw, 21px);
+      line-height: 1.75;
+    }
+
+    .hero-actions {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      color: var(--ink);
+      background: rgba(8, 35, 40, .8);
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .button.primary { color: #102008; border-color: var(--lime); background: var(--lime); font-weight: 800; }
+    .button:hover { transform: translateY(-1px); }
+
+    .metrics {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      max-width: 900px;
+      margin-top: 52px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(2, 17, 21, .7);
+      overflow: hidden;
+    }
+    .metric { padding: 18px 20px; border-right: 1px solid var(--line); }
+    .metric:last-child { border-right: 0; }
+    .metric strong { display: block; color: var(--lime); font: 800 26px/1.1 var(--mono); }
+    .metric span { display: block; margin-top: 7px; color: var(--muted); font-size: 12px; }
+
+    .section { padding: 78px 0 0; scroll-margin-top: 24px; }
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .section-kicker { color: var(--aqua); font: 700 11px/1 var(--mono); letter-spacing: .14em; }
+    h2 { margin: 10px 0 0; font-size: clamp(28px, 3vw, 45px); letter-spacing: -.035em; }
+    .section-copy { max-width: 560px; margin: 0; color: var(--muted); line-height: 1.7; }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(120px, 1fr));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      overflow-x: auto;
+      box-shadow: var(--shadow);
+    }
+    .stage {
+      position: relative;
+      min-width: 132px;
+      min-height: 170px;
+      padding: 20px 17px;
+      border-right: 1px solid var(--line);
+    }
+    .stage:last-child { border-right: 0; }
+    .stage::after {
+      position: absolute;
+      top: 85px;
+      right: -6px;
+      z-index: 2;
+      width: 11px;
+      height: 11px;
+      content: "";
+      border-top: 1px solid var(--lime);
+      border-right: 1px solid var(--lime);
+      background: var(--panel);
+      transform: rotate(45deg);
+    }
+    .stage:last-child::after { display: none; }
+    .stage-num { color: var(--faint); font: 800 10px/1 var(--mono); }
+    .stage h3 { margin: 32px 0 9px; font-size: 16px; }
+    .stage p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .stage.authority { background: linear-gradient(180deg, rgba(183,255,72,.07), transparent); }
+
+    .findings {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .finding {
+      min-height: 190px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel-2);
+    }
+    .finding-tag { color: var(--orange); font: 800 10px/1 var(--mono); letter-spacing: .12em; }
+    .finding h3 { margin: 18px 0 10px; font-size: 20px; }
+    .finding p { margin: 0; color: var(--muted); line-height: 1.7; }
+    .finding code { color: var(--aqua); font-family: var(--mono); }
+
+    .invariants {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .invariant {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 14px;
+      align-items: start;
+      padding: 20px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .invariant:nth-child(2n) { border-right: 0; }
+    .invariant:nth-last-child(-n+2) { border-bottom: 0; }
+    .invariant b { color: var(--lime); font: 800 13px/1.4 var(--mono); }
+    .invariant span { color: #c4d5d4; line-height: 1.6; }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-bottom: 18px;
+    }
+    .filter {
+      min-height: 36px;
+      padding: 0 13px;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 99px;
+      background: transparent;
+      cursor: pointer;
+    }
+    .filter.active { color: #102008; border-color: var(--lime); background: var(--lime); font-weight: 800; }
+
+    .chapters {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .chapter {
+      display: flex;
+      flex-direction: column;
+      min-height: 252px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(7, 28, 33, .82);
+      transition: border-color .18s ease, transform .18s ease;
+    }
+    .chapter:hover { border-color: var(--line-strong); transform: translateY(-2px); }
+    .chapter[hidden] { display: none; }
+    .chapter-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .chapter-num { color: var(--lime); font: 800 12px/1 var(--mono); }
+    .chapter-type { color: var(--faint); font: 700 9px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+    .chapter h3 { margin: 24px 0 10px; font-size: 19px; }
+    .chapter p { flex: 1; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.65; }
+    .chapter a { margin-top: 20px; color: var(--aqua); font: 700 12px/1 var(--mono); text-decoration: none; }
+    .chapter a::after { content: "  →"; color: var(--lime); }
+
+    .empty {
+      display: none;
+      padding: 28px;
+      color: var(--muted);
+      border: 1px dashed var(--line-strong);
+      border-radius: 14px;
+      text-align: center;
+    }
+    .empty.visible { display: block; }
+
+    .owner-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr);
+      gap: 0;
+      border: 1px solid var(--line-strong);
+      border-radius: 22px;
+      background: linear-gradient(120deg, rgba(13,45,47,.9), rgba(8,27,32,.95));
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .owner-copy { padding: clamp(28px, 5vw, 56px); }
+    .owner-copy h2 { margin-top: 14px; }
+    .owner-copy p { max-width: 660px; color: #b7cbca; line-height: 1.75; }
+    .command {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 24px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(2,14,18,.7);
+    }
+    .command code { color: var(--aqua); font: 12px/1.5 var(--mono); word-break: break-all; }
+    .copy { flex: 0 0 auto; color: var(--lime); border: 0; background: transparent; cursor: pointer; font: 700 11px/1 var(--mono); }
+    .owner-checks { padding: 34px; border-left: 1px solid var(--line); background: rgba(2,15,19,.55); }
+    .owner-checks h3 { margin-top: 0; }
+    .owner-checks ul { display: grid; gap: 14px; margin: 22px 0 0; padding: 0; list-style: none; }
+    .owner-checks li { position: relative; padding-left: 24px; color: var(--muted); line-height: 1.55; }
+    .owner-checks li::before { position: absolute; left: 0; content: "◇"; color: var(--lime); }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-top: 74px;
+      padding-top: 24px;
+      color: var(--faint);
+      border-top: 1px solid var(--line);
+      font: 11px/1.6 var(--mono);
+    }
+
+    @media (max-width: 1120px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { position: relative; z-index: 10; height: auto; padding: 16px 20px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .brand { margin-bottom: 14px; }
+      .nav-label, .side-note { display: none; }
+      .nav { display: flex; gap: 5px; padding-top: 12px; overflow-x: auto; }
+      .nav a { display: inline-flex; min-width: max-content; min-height: 34px; }
+      main { padding: 24px 22px 70px; }
+      .chapters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 720px) {
+      main { padding-inline: 14px; }
+      .hero { min-height: auto; padding: 30px 22px; }
+      .hero::after { display: none; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .metric:nth-child(2) { border-right: 0; }
+      .metric:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .section { padding-top: 58px; }
+      .section-head { align-items: start; flex-direction: column; }
+      .findings, .invariants, .chapters, .owner-card { grid-template-columns: 1fr; }
+      .invariant { border-right: 0; }
+      .invariant:nth-last-child(2) { border-bottom: 1px solid var(--line); }
+      .owner-checks { border-top: 1px solid var(--line); border-left: 0; }
+      footer { flex-direction: column; }
+    }
+
+    @media print {
+      body { color: #111; background: #fff; }
+      body::before, .sidebar, .hero-actions, .toolbar, .command, footer { display: none !important; }
+      .shell { display: block; }
+      main { width: 100%; padding: 0; }
+      .hero, .finding, .pipeline, .invariants, .chapter, .owner-card { color: #111; background: #fff; box-shadow: none; break-inside: avoid; }
+      .hero { min-height: auto; }
+      .hero::after { display: none; }
+      .hero-lead, .finding p, .stage p, .chapter p, .owner-copy p, .owner-checks li, .section-copy { color: #333; }
+      .section { padding-top: 32px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" aria-label="课程导航">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span><strong>Railway Recon</strong><small>CODE LEARNING / v0.2</small></span>
+      </div>
+      <label>
+        <span class="visually-hidden"></span>
+        <input id="global-search" class="search" type="search" placeholder="搜索课程章节…" aria-label="搜索课程章节">
+      </label>
+      <div class="nav-label">Navigation</div>
+      <nav class="nav">
+        <a href="#overview" class="active"><span class="nav-num">00</span><span>项目总览</span></a>
+        <a href="#pipeline"><span class="nav-num">01</span><span>执行路线</span></a>
+        <a href="#findings"><span class="nav-num">02</span><span>关键结论</span></a>
+        <a href="#invariants"><span class="nav-num">03</span><span>系统不变量</span></a>
+        <a href="#chapters"><span class="nav-num">04</span><span>课程章节</span></a>
+        <a href="#owner"><span class="nav-num">05</span><span>第二场景</span></a>
+      </nav>
+      <div class="side-note"><b>FAIL-CLOSED</b><br>候选、模糊状态、失效哈希和未接受资产都不能进入权威发布。</div>
+    </aside>
+
+    <main>
+      <section id="overview" class="hero">
+        <div class="eyebrow">Evidence-driven structured reconstruction</div>
+        <h1>从点云候选<br>到可追溯铁路资产</h1>
+        <p class="hero-lead">这不是一份泛泛的代码仓库说明，而是一套面向项目 Owner 的学习入口：看懂真实执行链、证据资格、TrackGraph、参数化网格、质量门禁，以及第二个铁路场景该怎样安全迁移。</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#chapters">开始学习</a>
+          <a class="button" href="README.md">打开完整课程索引</a>
+          <button class="button" type="button" onclick="window.print()">打印 / 导出 PDF</button>
+        </div>
+        <div class="metrics" aria-label="项目课程指标">
+          <div class="metric"><strong>50+</strong><span>显式 CLI 命令</span></div>
+          <div class="metric"><strong>114</strong><span>Python 测试通过</span></div>
+          <div class="metric"><strong>4</strong><span>证据等级</span></div>
+          <div class="metric"><strong>12</strong><span>核心学习章节</span></div>
+        </div>
+      </section>
+
+      <section id="pipeline" class="section">
+        <div class="section-head">
+          <div><div class="section-kicker">EXECUTION MAP</div><h2>真正的数据升级路线</h2></div>
+          <p class="section-copy">当前代码没有一个“一键跑完”的总编排器。操作者显式调用各阶段，每一层用状态、Schema、人工复核和 SHA-256 阻止错误数据静默升级。</p>
+        </div>
+        <div class="pipeline" role="list" aria-label="铁路重建执行流程">
+          <article class="stage" role="listitem"><span class="stage-num">01</span><h3>Raw Input</h3><p>LAS/LAZ<br>camera.csv<br>panoramas</p></article>
+          <article class="stage" role="listitem"><span class="stage-num">02</span><h3>Audit</h3><p>输入资格<br>坐标限制<br>照片引用</p></article>
+          <article class="stage" role="listitem"><span class="stage-num">03</span><h3>Segment</h3><p>相机链程<br>50 m 分段<br>走廊裁剪</p></article>
+          <article class="stage" role="listitem"><span class="stage-num">04</span><h3>Candidate</h3><p>轨头峰值<br>竖直构件<br>线状候选</p></article>
+          <article class="stage authority" role="listitem"><span class="stage-num">05</span><h3>Review</h3><p>独立复核<br>Owner 豁免<br>哈希绑定</p></article>
+          <article class="stage authority" role="listitem"><span class="stage-num">06</span><h3>TrackGraph</h3><p>全局身份<br>拓扑接缝<br>证据区间</p></article>
+          <article class="stage" role="listitem"><span class="stage-num">07</span><h3>Geometry</h3><p>连续轨道<br>审核布局<br>资产映射</p></article>
+          <article class="stage authority" role="listitem"><span class="stage-num">08</span><h3>Release</h3><p>QA + Gate<br>冻结注册表<br>模型哈希</p></article>
+        </div>
+      </section>
+
+      <section id="findings" class="section">
+        <div class="section-head">
+          <div><div class="section-kicker">CODE-BASED FINDINGS</div><h2>代码审查得到的四个结论</h2></div>
+          <p class="section-copy">结论以当前工作树为准。历史汇报若与代码不同，页面选择代码，并把无法确认的能力标为 UNKNOWN。</p>
+        </div>
+        <div class="findings">
+          <article class="finding"><div class="finding-tag">ARCHITECTURE</div><h3>不是“一键黑盒”</h3><p><code>railway_recon.cli:main</code> 提供 50 多个显式命令，没有统一 DAG 编排器。每一步的输入、输出和失败状态都要由操作者负责串联。</p></article>
+          <article class="finding"><div class="finding-tag">AUTHORITATIVE PATH</div><h3>钢轨链路最完整</h3><p>钢轨已经具备候选、人工接受、TrackGraph、连续网格、注册表映射和发布门禁；局部候选绝不能直接进入权威 Mesh。</p></article>
+          <article class="finding"><div class="finding-tag">CAPABILITY BOUNDARY</div><h3>非轨道资产仍以审核布局为主</h3><p>站台、雨棚、接触网和照片解释资产可生成参数化几何，但完整自动分割、专业分类和多平面恢复在当前公开代码中并不完整。</p></article>
+          <article class="finding"><div class="finding-tag">SOURCE OF TRUTH</div><h3>“final.glb”不是权威证明</h3><p>权威资格来自通过审计的图、全 accepted 冻结注册表、Mesh/关系 QA，以及模型—注册表—资产集合的精确哈希绑定。</p></article>
+        </div>
+      </section>
+
+      <section id="invariants" class="section">
+        <div class="section-head">
+          <div><div class="section-kicker">SYSTEM CONTRACTS</div><h2>十个必须守住的不变量</h2></div>
+          <p class="section-copy">换算法可以，换场景可以；这些合同不能被绕过。它们正是项目从“能显示”走向“可交付、可追溯”的核心。</p>
+        </div>
+        <div class="invariants">
+          <div class="invariant"><b>INV-01</b><span>所有项目输出必须留在项目根目录内。</span></div>
+          <div class="invariant"><b>INV-02</b><span>局部候选不是权威几何，未复核来源不得进入 pass 图。</span></div>
+          <div class="invariant"><b>INV-03</b><span>TrackGraph 必须绑定当前 camera 和配置哈希。</span></div>
+          <div class="invariant"><b>INV-04</b><span>错误轨道宁可显式断开，也不能为了连续被强制连接。</span></div>
+          <div class="invariant"><b>INV-05</b><span>推断区间必须保持 rule_inferred，不能伪装 observed。</span></div>
+          <div class="invariant"><b>INV-06</b><span>每个可见 Mesh 对象必须具有唯一、可查询的资产身份。</span></div>
+          <div class="invariant"><b>INV-07</b><span>发布注册表只能包含 accepted 资产。</span></div>
+          <div class="invariant"><b>INV-08</b><span>Gate 只认显式 pass，模糊状态一律阻断。</span></div>
+          <div class="invariant"><b>INV-09</b><span>Web 交付必须绑定模型、注册表和资产集合哈希。</span></div>
+          <div class="invariant"><b>INV-10</b><span>无 CRS、垂直基准和独立点时，只能声明内部拟合精度。</span></div>
+        </div>
+      </section>
+
+      <section id="chapters" class="section">
+        <div class="section-head">
+          <div><div class="section-kicker">LEARNING MODULES</div><h2>完整课程章节</h2></div>
+          <p class="section-copy">先读系统地图，再读数据资格和核心抽象；算法要放在 QA 与 source of truth 的上下文中理解。</p>
+        </div>
+        <div class="toolbar" role="group" aria-label="章节筛选">
+          <button class="filter active" data-filter="all" type="button">全部</button>
+          <button class="filter" data-filter="architecture" type="button">架构</button>
+          <button class="filter" data-filter="engineering" type="button">工程</button>
+          <button class="filter" data-filter="practice" type="button">练习</button>
+          <button class="filter" data-filter="migration" type="button">迁移</button>
+        </div>
+        <div id="chapter-grid" class="chapters">
+          <article class="chapter" data-category="architecture" data-search="系统 execution entrypoint cli pipeline stage"><div class="chapter-top"><span class="chapter-num">00</span><span class="chapter-type">Architecture</span></div><h3>系统执行图</h3><p>真实入口、阶段顺序、mandatory/default-off/experimental 边界，以及没有总编排器带来的风险。</p><a href="00_SYSTEM_MAP.md">阅读详细文档</a></article>
+          <article class="chapter" data-category="architecture" data-search="数据 生命周期 source of truth authoritative candidate manifest hash"><div class="chapter-top"><span class="chapter-num">01</span><span class="chapter-type">Data Contract</span></div><h3>数据生命周期</h3><p>追踪 15 类对象怎样从 raw evidence 逐层升级为 hash-bound release，明确谁能覆盖谁。</p><a href="01_DATA_LIFECYCLE.md">阅读详细文档</a></article>
+          <article class="chapter" data-category="architecture" data-search="TrackGraph RailAssetGraph evidence confidence gate fail closed"><div class="chapter-top"><span class="chapter-num">02</span><span class="chapter-type">Abstractions</span></div><h3>核心抽象</h3><p>从真实失败案例理解 TrackGraph、证据模型、质量门和 fail-closed 为什么存在。</p><a href="02_CORE_ABSTRACTIONS.md">阅读详细文档</a></article>
+          <article class="chapter" data-category="engineering" data-search="rail platform canopy catenary facade sign asset trace"><div class="chapter-top"><span class="chapter-num">03</span><span class="chapter-type">Asset Trace</span></div><h3>五类资产追踪</h3><p>钢轨、站台、雨棚、接触网和照片解释资产从证据走到导出的真实代码路径。</p><a href="03_ASSET_TRACES.md">阅读详细文档</a></article>
+          <article class="chapter" data-category="engineering" data-search="QA gate topology mesh registry release invariant threshold"><div class="chapter-top"><span class="chapter-num">04</span><span class="chapter-type">Quality</span></div><h3>QA 与质量门禁</h3><p>数据、证据、几何、拓扑、Mesh、发布六层 QA，以及最关键的十个系统不变量。</p><a href="04_QA_AND_GATES.md">阅读详细文档</a></article>
+          <article class="chapter" data-category="engineering" data-search="算法 坐标 chainage rail pairing fitting sweep projection mesh"><div class="chapter-top"><span class="chapter-num">05</span><span class="chapter-type">Algorithms</span></div><h3>关键算法</h3><p>用公式和直觉解释坐标、轨头提取、配对、全局身份、参数化 sweep 和照片投影。</p><a href="05_ALGORITHMS.md">阅读详细文档</a></article>
+          <article class="chapter" data-category="architecture" data-search="dependency numpy scipy laspy open3d gislab blender three"><div class="chapter-top"><span class="chapter-num">06</span><span class="chapter-type">Boundaries</span></div><h3>依赖能力边界</h3><p>分清自研核心、通用数值库、外部基线、DCC 与展示层，知道替换依赖后什么仍属于我们。</p><a href="06_DEPENDENCY_BOUNDARIES.md">阅读详细文档</a></article>
+          <article class="chapter" data-category="engineering" data-search="失败 断轨 重叠 浮柱 楼梯 破面 z fighting normal release"><div class="chapter-top"><span class="chapter-num">07</span><span class="chapter-type">Failure History</span></div><h3>失败演化史</h3><p>从断轨、重叠、浮柱、假屋面、法线和发布污染，理解修复怎样变成制度。</p><a href="07_FAILURE_HISTORY.md">阅读详细文档</a></article>
+          <article class="chapter" data-category="practice" data-search="口试 exam question debugging design migration answer"><div class="chapter-top"><span class="chapter-num">08</span><span class="chapter-type">Assessment</span></div><h3>Owner 口试</h3><p>80 道基于当前代码的基础、设计、调试、“为什么不”和迁移题，答案集中在文末。</p><a href="08_ORAL_EXAM.md">开始口试</a></article>
+          <article class="chapter" data-category="practice" data-search="练习 hands on config threshold diagnostic fault algorithm asset"><div class="chapter-top"><span class="chapter-num">09</span><span class="chapter-type">Hands-on</span></div><h3>12 个动手练习</h3><p>从只读定位到阈值实验、故障注入、算法替换、新资产和第二场景演练。</p><a href="09_HANDS_ON_EXERCISES.md">查看练习</a></article>
+          <article class="chapter" data-category="migration" data-search="第二场景 new laz camera panorama playbook prototype corridor"><div class="chapter-top"><span class="chapter-num">10</span><span class="chapter-type">Migration</span></div><h3>第二场景作战手册</h3><p>第一小时、第一天、50–100 m prototype、阈值重标定、全线扩展和权威声明条件。</p><a href="10_SECOND_SCENE_PLAYBOOK.md">打开作战手册</a></article>
+          <article class="chapter" data-category="migration practice" data-search="学习计划 seven days must know should know owner"><div class="chapter-top"><span class="chapter-num">11</span><span class="chapter-type">Learning Plan</span></div><h3>7 天 Owner 学习计划</h3><p>每天 2–3 小时，只学习能让你独立接手第二铁路场景的关键知识。</p><a href="11_LEARNING_PLAN.md">开始七天计划</a></article>
+        </div>
+        <div id="empty-state" class="empty">没有匹配章节。试试“轨道”“Gate”“第二场景”或“Mesh”。</div>
+      </section>
+
+      <section id="owner" class="section">
+        <div class="owner-card">
+          <div class="owner-copy">
+            <div class="section-kicker">YOUR FIRST ACTION</div>
+            <h2>第一天不要改模型，先追调用链</h2>
+            <p>从六个命令看清候选怎样经过人工接受、全局图、连续网格、冻结注册表和发布 Gate。能解释每个阶段的输入、输出与失败行为，才算真正开始掌握系统。</p>
+            <div class="command"><code id="first-command">.\.venv\Scripts\python.exe -m railway_recon --help</code><button id="copy-command" class="copy" type="button">复制</button></div>
+          </div>
+          <div class="owner-checks">
+            <h3>完成后你应当能回答</h3>
+            <ul>
+              <li>为什么 candidate 不能直接进入 Mesh？</li>
+              <li>断轨应该回 detector、graph 还是 DCC 修？</li>
+              <li>哪些阈值必须在第二场景重新标定？</li>
+              <li>什么条件下才能称模型 authoritative？</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <footer><span>RAILWAY SCENE RECONSTRUCTION KIT · CODE LEARNING PORTAL</span><span>Source: current working tree · Generated 2026-08-29</span></footer>
+    </main>
+  </div>
+
+  <script>
+    const search = document.querySelector('#global-search');
+    const cards = [...document.querySelectorAll('.chapter')];
+    const filters = [...document.querySelectorAll('.filter')];
+    const empty = document.querySelector('#empty-state');
+    let activeFilter = 'all';
+
+    function updateCards() {
+      const term = search.value.trim().toLowerCase();
+      let visible = 0;
+      cards.forEach((card) => {
+        const categories = card.dataset.category.split(' ');
+        const haystack = `${card.textContent} ${card.dataset.search}`.toLowerCase();
+        const matchesFilter = activeFilter === 'all' || categories.includes(activeFilter);
+        const matchesSearch = !term || haystack.includes(term);
+        card.hidden = !(matchesFilter && matchesSearch);
+        if (!card.hidden) visible += 1;
+      });
+      empty.classList.toggle('visible', visible === 0);
+    }
+
+    search.addEventListener('input', () => {
+      activeFilter = 'all';
+      filters.forEach((item) => item.classList.toggle('active', item.dataset.filter === 'all'));
+      updateCards();
+      if (search.value.trim()) document.querySelector('#chapters').scrollIntoView({ block: 'start' });
+    });
+
+    filters.forEach((button) => button.addEventListener('click', () => {
+      activeFilter = button.dataset.filter;
+      filters.forEach((item) => item.classList.toggle('active', item === button));
+      updateCards();
+    }));
+
+    document.querySelector('#copy-command').addEventListener('click', async (event) => {
+      const value = document.querySelector('#first-command').textContent;
+      try {
+        await navigator.clipboard.writeText(value);
+        event.currentTarget.textContent = '已复制';
+      } catch {
+        event.currentTarget.textContent = '请手动复制';
+      }
+      setTimeout(() => { event.currentTarget.textContent = '复制'; }, 1600);
+    });
+
+    const navLinks = [...document.querySelectorAll('.nav a')];
+    const sections = navLinks.map((link) => document.querySelector(link.getAttribute('href'))).filter(Boolean);
+    const observer = new IntersectionObserver((entries) => {
+      const current = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!current) return;
+      navLinks.forEach((link) => link.classList.toggle('active', link.getAttribute('href') === `#${current.target.id}`));
+    }, { rootMargin: '-15% 0px -70% 0px', threshold: [0, .1, .5] });
+    sections.forEach((section) => observer.observe(section));
+  </script>
+</body>
+</html>

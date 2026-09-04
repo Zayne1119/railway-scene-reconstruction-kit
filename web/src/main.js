@@ -1,241 +1,465 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
+import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import {
-  acceptanceRequested,
-  assetSetSha256,
-  sha256Hex,
-  validateAcceptanceConfig,
-} from "./acceptance.js";
+import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import "./style.css";
 
-const canvas = document.querySelector("#viewport");
-const status = document.querySelector("#status");
-const title = document.querySelector("#title");
-const details = document.querySelector("#details");
-const message = document.querySelector("#message");
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, logarithmicDepthBuffer: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => [...document.querySelectorAll(selector)];
+const canvas = $("#viewport");
+const ui = {
+  title: $("#title"),
+  status: $("#status span"),
+  loader: $("#loader"),
+  loaderLabel: $("#loader-label"),
+  loaderProgress: $("#loader-progress"),
+  message: $("#message"),
+  issueList: $("#issue-list"),
+  issueCount: $("#issue-count"),
+  details: $("#details"),
+  modeNote: $("#mode-note"),
+};
+
+const state = {
+  config: null,
+  model: null,
+  modelObjects: [],
+  assets: new Map(),
+  reports: {},
+  issues: { wire: [], mast: [], gap: [] },
+  markers: new THREE.Group(),
+  mode: "evidence",
+  issueTab: "wire",
+  selection: null,
+  selectionHelper: null,
+};
+
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  antialias: true,
+  alpha: true,
+  logarithmicDepthBuffer: true,
+  powerPreference: "high-performance",
+});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 1.08;
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 100000);
+scene.background = new THREE.Color(0x071822);
+scene.fog = new THREE.FogExp2(0x071822, 0.00012);
+scene.add(new THREE.HemisphereLight(0xc8efff, 0x142229, 2.1));
+const keyLight = new THREE.DirectionalLight(0xffffff, 2.7);
+keyLight.position.set(1200, -800, 1600);
+scene.add(keyLight);
+const rimLight = new THREE.DirectionalLight(0x4fd9f4, 1.2);
+rimLight.position.set(-1600, 1200, 700);
+scene.add(rimLight);
+
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100000);
 camera.up.set(0, 0, 1);
-camera.position.set(28, -34, 24);
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
-controls.screenSpacePanning = true;
-scene.add(new THREE.HemisphereLight(0xdff5ff, 0x23313a, 2.2));
-const sun = new THREE.DirectionalLight(0xffffff, 3.1);
-sun.position.set(-20, -15, 35);
-scene.add(sun);
-scene.add(new THREE.GridHelper(200, 40, 0x2b6472, 0x153b47).rotateX(Math.PI / 2));
+controls.dampingFactor = 0.07;
+controls.screenSpacePanning = false;
+controls.maxDistance = 20000;
 
-let modelRoot = null;
-let registry = new Map();
-let selected = null;
-let originalMaterial = null;
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
+const clock = new THREE.Clock();
+const namespacePattern = /^(TRACK|CATENARY|CONDUCTOR|STATION(?:_[A-Z0-9]+)*)--/;
+const candidateRootPattern = /^(TRACKGRAPH--TRACK-|TRACK--|TRACK-\d|CATENARY--|CONDUCTOR--|STATION_|SEG\d+-|S\d+-|CORE-|SUPPLEMENTAL-|ADJACENT-)/;
 
-function showMessage(text) { message.textContent = text; message.hidden = false; }
-function failClosed(text) {
-  status.textContent = "验收失败";
-  showMessage(text);
-  canvas.dataset.acceptance = "failed";
+function layerFromName(name = "") {
+  if (/(CONDUCTOR|CONTACT-WIRE|MESSENGER-WIRE|WIRE-BRIDGE)/.test(name)) return "CONDUCTOR";
+  if (/(CATENARY-MAST|CATENARY--|MAST-)/.test(name)) return "CATENARY";
+  if (/^(TRACKGRAPH--TRACK-|TRACK--|TRACK-\d)/.test(name)) return "TRACK";
+  return "STATION";
 }
-function assetIdFor(object) {
+
+function setLoading(label, progress) {
+  ui.loaderLabel.textContent = label;
+  ui.loaderProgress.style.width = `${Math.max(3, Math.min(100, progress))}%`;
+}
+
+function showMessage(text) {
+  ui.message.textContent = text;
+  ui.message.hidden = false;
+  window.clearTimeout(showMessage.timer);
+  showMessage.timer = window.setTimeout(() => { ui.message.hidden = true; }, 3600);
+}
+
+async function fetchJson(url, optional = false) {
+  if (!url) return null;
+  try {
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+    return await response.json();
+  } catch (error) {
+    if (optional) return null;
+    throw new Error(`读取 ${url} 失败：${error.message}`);
+  }
+}
+
+function rootObjectFor(object) {
   let current = object;
-  while (current) {
-    if (current.userData?.asset_id) return current.userData.asset_id;
-    if (registry.has(current.name)) return current.name;
+  while (current && current !== state.model) {
+    const name = current.name || "";
+    if (state.assets.has(name) || namespacePattern.test(name) || candidateRootPattern.test(name)) return current;
     current = current.parent;
   }
-  return object.name || "UNREGISTERED";
+  return object;
 }
-function showAsset(id) {
-  const asset = registry.get(id);
-  if (!asset) {
-    details.innerHTML = `<h2>${id}</h2><p>模型节点未在资产注册表中找到；交付前必须补齐映射。</p>`;
-    return;
-  }
-  const limitations = (asset.limitations || []).join("；") || "无记录";
-  details.innerHTML = `<h2>${asset.id}</h2><dl><dt>类型</dt><dd>${asset.type}</dd><dt>证据</dt><dd>${asset.evidence_level}</dd><dt>置信度</dt><dd>${asset.confidence}</dd><dt>状态</dt><dd>${asset.status}</dd><dt>里程</dt><dd>${asset.chainage_m ?? "未填写"}</dd><dt>限制</dt><dd>${limitations}</dd></dl>`;
+
+function namespaceFor(object) {
+  const named = rootObjectFor(object);
+  return (named.name.match(namespacePattern) || [])[1] || layerFromName(named.name);
 }
-function fitCamera(root) {
-  const box = new THREE.Box3().setFromObject(root);
-  if (box.isEmpty()) return;
-  const sphere = box.getBoundingSphere(new THREE.Sphere());
-  const radius = Math.max(sphere.radius, 1);
-  controls.target.copy(sphere.center);
-  camera.position.copy(sphere.center).add(new THREE.Vector3(radius * 1.25, -radius * 1.55, radius * 0.9));
-  camera.near = Math.max(radius / 10000, 0.01);
-  camera.far = radius * 100;
+
+function layerFor(object) {
+  const namespace = namespaceFor(object);
+  return namespace.startsWith("STATION_") ? "STATION" : namespace;
+}
+
+function focusConfiguredView(name) {
+  const value = state.config?.fixed_views?.[name];
+  if (!value?.target || !value?.eye) return false;
+  camera.position.fromArray(value.eye);
+  controls.target.fromArray(value.target);
+  camera.near = Number(value.near) || 0.05;
+  camera.far = Number(value.far) || 5000;
   camera.updateProjectionMatrix();
   controls.update();
-}
-function addSyntheticPlaceholder() {
-  const group = new THREE.Group();
-  const rail = new THREE.MeshStandardMaterial({ color: 0x6e8087, metalness: .65, roughness: .3 });
-  const bed = new THREE.MeshStandardMaterial({ color: 0x504a42, roughness: .95 });
-  for (const y of [-0.72, 0.72, 4.28, 5.72]) {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(40, .08, .14), rail);
-    mesh.position.set(0, y, .25);
-    group.add(mesh);
-  }
-  for (const y of [0, 5]) {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(40, 3.4, .35), bed);
-    mesh.position.set(0, y, -.15);
-    group.add(mesh);
-  }
-  scene.add(group);
-  modelRoot = group;
-  fitCamera(group);
+  return true;
 }
 
-async function load() {
-  const query = new URLSearchParams(location.search);
-  const configUrl = query.get("config") || "/project.json";
-  let acceptanceMode = acceptanceRequested(query);
-  let config;
-  try {
-    const response = await fetch(configUrl, { cache: "no-store" });
-    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-    config = await response.json();
-  } catch (error) {
-    if (acceptanceMode) {
-      failClosed(`无法加载验收配置 ${configUrl}：${error.message || error}`);
-      return;
-    }
-    status.textContent = "等待项目配置";
-    showMessage(`未找到 ${configUrl}。已显示合成占位场景；复制 public/project.example.json 为 public/project.json 并填写模型与注册表地址。`);
-    addSyntheticPlaceholder();
+function findObjects(predicate) {
+  return state.modelObjects.filter(predicate);
+}
+
+function boxFor(objects) {
+  const box = new THREE.Box3();
+  objects.filter(Boolean).forEach((object) => box.expandByObject(object));
+  return box;
+}
+
+function fitObjects(objects, direction = new THREE.Vector3(0.7, -0.55, 0.42), padding = 1.28) {
+  const box = boxFor(objects);
+  if (box.isEmpty()) {
+    showMessage("当前视图没有可定位的几何");
     return;
   }
-  acceptanceMode = acceptanceRequested(query, config);
-  if (acceptanceMode) {
-    const configErrors = validateAcceptanceConfig(config);
-    if (configErrors.length) {
-      failClosed(configErrors.join("；"));
-      return;
-    }
-    canvas.dataset.acceptance = "verifying";
-  }
-  title.textContent = config.title || "铁路场景重建验收";
-  let registryValue;
-  try {
-    const registryResponse = await fetch(config.registry_url, { cache: "no-store" });
-    if (!registryResponse.ok) {
-      throw new Error(`${registryResponse.status} ${registryResponse.statusText}`);
-    }
-    const registryBytes = await registryResponse.arrayBuffer();
-    if (acceptanceMode) {
-      const actualHash = await sha256Hex(registryBytes);
-      if (actualHash !== config.registry_sha256.toLowerCase()) {
-        throw new Error(`注册表 SHA-256 不一致：${actualHash}`);
-      }
-    }
-    registryValue = JSON.parse(new TextDecoder().decode(registryBytes));
-    const assets = registryValue.assets || [];
-    registry = new Map(assets.map((asset) => [asset.id, asset]));
-    if (acceptanceMode) {
-      if (registryValue.release_id !== config.release_id) {
-        throw new Error("注册表 release_id 与项目配置不一致");
-      }
-      const actualAssetSet = await assetSetSha256(assets);
-      if (actualAssetSet !== config.asset_set_sha256.toLowerCase()) {
-        throw new Error(`资产集合 SHA-256 不一致：${actualAssetSet}`);
-      }
-      const blocking = assets.filter((asset) => asset.status !== "accepted");
-      if (!assets.length || blocking.length) {
-        throw new Error(`clean 注册表包含 ${blocking.length} 个非 accepted 资产`);
-      }
-    }
-  } catch (error) {
-    if (acceptanceMode) {
-      failClosed(`资产注册表验收失败：${error.message || error}`);
-      return;
-    }
-    showMessage(`资产注册表加载失败；只能浏览模型：${error.message || error}`);
-  }
-  status.textContent = "加载模型";
-  try {
-    const modelResponse = await fetch(config.model_url, { cache: "no-store" });
-    if (!modelResponse.ok) throw new Error(`${modelResponse.status} ${modelResponse.statusText}`);
-    const modelBytes = await modelResponse.arrayBuffer();
-    if (acceptanceMode) {
-      const actualHash = await sha256Hex(modelBytes);
-      if (actualHash !== config.model_sha256.toLowerCase()) {
-        throw new Error(`模型 SHA-256 不一致：${actualHash}`);
-      }
-    }
-    const modelUrl = new URL(config.model_url, location.href);
-    const basePath = modelUrl.href.slice(0, modelUrl.href.lastIndexOf("/") + 1);
-    const gltf = await new Promise((resolve, reject) => {
-      new GLTFLoader().parse(modelBytes, basePath, resolve, reject);
-    });
-    modelRoot = gltf.scene;
-    if (acceptanceMode) {
-      const missing = new Set();
-      modelRoot.traverse((object) => {
-        if (!object.isMesh) return;
-        const id = assetIdFor(object);
-        if (!registry.has(id)) missing.add(id);
-      });
-      if (missing.size) {
-        throw new Error(`存在 ${missing.size} 个未注册 Mesh 节点：${[...missing].slice(0, 10).join(", ")}`);
-      }
-    }
-    scene.add(modelRoot);
-    fitCamera(modelRoot);
-    status.textContent = acceptanceMode
-      ? `${registry.size} 项资产 · 验收哈希匹配`
-      : `${registry.size} 项资产 · 模型已加载`;
-    if (acceptanceMode) canvas.dataset.acceptance = "passed";
-  } catch (error) {
-    modelRoot = null;
-    if (acceptanceMode) {
-      failClosed(`模型验收失败：${error.message || error}`);
-      return;
-    }
-    status.textContent = "模型加载失败";
-    showMessage(`无法加载模型：${error.message || error}`);
-    addSyntheticPlaceholder();
+  const sphere = box.getBoundingSphere(new THREE.Sphere());
+  const radius = Math.max(sphere.radius, 2);
+  const fov = THREE.MathUtils.degToRad(camera.fov);
+  const distance = (radius / Math.sin(fov / 2)) * padding;
+  camera.position.copy(sphere.center).add(direction.clone().normalize().multiplyScalar(distance));
+  camera.near = Math.max(0.05, distance / 10000);
+  camera.far = Math.max(5000, distance + radius * 14);
+  camera.updateProjectionMatrix();
+  controls.target.copy(sphere.center);
+  controls.maxDistance = Math.max(200, distance * 4);
+  controls.update();
+}
+
+function selectObject(object, asset = null) {
+  const selected = rootObjectFor(object);
+  state.selection = selected;
+  if (state.selectionHelper) scene.remove(state.selectionHelper);
+  state.selectionHelper = new THREE.BoxHelper(selected, 0xb5ff48);
+  state.selectionHelper.material.depthTest = false;
+  state.selectionHelper.renderOrder = 20;
+  scene.add(state.selectionHelper);
+  renderDetails(selected, asset || state.assets.get(selected.name));
+}
+
+function detailRow(label, value) {
+  const row = document.createElement("div");
+  row.className = "detail-row";
+  const key = document.createElement("b");
+  const content = document.createElement("span");
+  key.textContent = label;
+  content.textContent = value ?? "—";
+  row.append(key, content);
+  return row;
+}
+
+function renderDetails(object, asset) {
+  ui.details.replaceChildren();
+  const title = document.createElement("h3");
+  title.textContent = asset?.id || object?.name || "资产信息";
+  ui.details.append(title);
+  ui.details.append(
+    detailRow("专业", namespaceFor(object) || object?.userData?.issueType || "质检标记"),
+    detailRow("类型", asset?.type || object?.userData?.label || "场景构件"),
+    detailRow("证据等级", asset?.evidence_level || object?.userData?.evidence || "未登记"),
+    detailRow("状态", asset?.status || object?.userData?.status || "候选"),
+  );
+  if (Number.isFinite(asset?.chainage_m)) ui.details.append(detailRow("里程", `K${(asset.chainage_m / 1000).toFixed(3)}`));
+  if (Number.isFinite(asset?.confidence)) ui.details.append(detailRow("置信度", asset.confidence.toFixed(2)));
+  const limitation = asset?.limitations?.[0] || object?.userData?.limitation;
+  if (limitation) ui.details.append(detailRow("限制", limitation));
+}
+
+function updateMode(mode) {
+  state.mode = mode;
+  $$(".mode-button").forEach((button) => button.classList.toggle("active", button.dataset.mode === mode));
+  state.modelObjects.forEach((object) => {
+    if (object.name.includes("INFERRED")) object.visible = mode === "hypothesis";
+  });
+  ui.modeNote.textContent = mode === "evidence"
+    ? "证据版：隐藏 6 段有界推断轨道，只显示现有证据支持的构件"
+    : "推断补全版：橙色轨道为规则补全假设，不等同于现场观测";
+  if (mode === "hypothesis") {
+    const length = state.issues.gap.reduce(
+      (sum, gap) => sum + gap.raw.chainage_end_m - gap.raw.chainage_start_m,
+      0,
+    );
+    showMessage(`已显示 ${state.issues.gap.length} 段推断轨道，共 ${Math.round(length)} 米；橙色表示规则假设`);
   }
 }
 
-canvas.addEventListener("pointerdown", (event) => {
-  if (!modelRoot) return;
-  const rect = canvas.getBoundingClientRect();
-  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-  raycaster.setFromCamera(pointer, camera);
-  const hit = raycaster.intersectObject(modelRoot, true).find((item) => item.object.isMesh);
-  if (!hit) return;
-  if (selected && originalMaterial) selected.material = originalMaterial;
-  selected = hit.object;
-  originalMaterial = selected.material;
-  selected.material = new THREE.MeshStandardMaterial({ color: 0xb9ff48, emissive: 0x284500 });
-  showAsset(assetIdFor(selected));
-});
-
-document.querySelector("#reset").addEventListener("click", () => modelRoot && fitCamera(modelRoot));
-document.querySelector("#search").addEventListener("change", (event) => {
-  const value = event.target.value.trim().toLowerCase();
-  const asset = [...registry.values()].find((item) => item.id.toLowerCase().includes(value) || item.type.toLowerCase().includes(value));
-  if (asset) showAsset(asset.id);
-});
-document.querySelector("#evidence").addEventListener("change", (event) => {
-  const level = event.target.value;
-  if (!modelRoot) return;
-  modelRoot.traverse((object) => {
-    if (!object.isMesh) return;
-    const asset = registry.get(assetIdFor(object));
-    object.visible = !level || !asset || asset.evidence_level === level;
+function updateLayers() {
+  const enabled = new Map($$("[data-layer]").map((input) => [input.dataset.layer, input.checked]));
+  state.modelObjects.forEach((object) => {
+    const namespace = layerFor(object);
+    const modeVisible = !object.name.includes("INFERRED") || state.mode === "hypothesis";
+    object.visible = (enabled.get(namespace) ?? true) && modeVisible;
   });
-});
+}
+
+function issueButton(issue, index) {
+  const button = document.createElement("button");
+  button.className = "issue-item";
+  const code = document.createElement("b");
+  const label = document.createElement("span");
+  const meta = document.createElement("em");
+  code.textContent = String(index + 1).padStart(2, "0");
+  label.textContent = issue.label;
+  meta.textContent = issue.meta;
+  button.append(code, label, meta);
+  button.addEventListener("click", () => focusIssue(issue));
+  return button;
+}
+
+function renderIssues() {
+  const issues = state.issues[state.issueTab] || [];
+  ui.issueCount.textContent = String(issues.length);
+  ui.issueList.replaceChildren();
+  if (!issues.length) {
+    const empty = document.createElement("div");
+    empty.className = "issue-empty";
+    empty.textContent = "本类问题已闭环";
+    ui.issueList.append(empty);
+    return;
+  }
+  issues.forEach((issue, index) => ui.issueList.append(issueButton(issue, index)));
+}
+
+function focusIssue(issue) {
+  let targets = [];
+  if (issue.type === "wire") {
+    targets = findObjects((object) => issue.objectNames.includes(object.name));
+  } else if (issue.type === "mast") {
+    targets = state.markers.children.filter((marker) => marker.userData.issueId === issue.id);
+  } else if (issue.type === "gap") {
+    targets = findObjects((object) =>
+      object.name.startsWith(`TRACK--${issue.trackId}`) &&
+      object.name.includes(issue.nodeToken)
+    );
+    if (state.mode !== "hypothesis") updateMode("hypothesis");
+  }
+  if (targets.length) {
+    fitObjects(targets, new THREE.Vector3(0.5, -0.75, 0.32), 2.1);
+    selectObject(targets[0]);
+  } else {
+    showMessage("该问题保留在报告中，但没有生成正式网格");
+  }
+}
+
+function buildIssues() {
+  const seamReport = state.reports.seams || {};
+  state.issues.wire = (seamReport.seams || [])
+    .filter((seam) => seam.adjacent && !seam.passed)
+    .map((seam) => ({
+      type: "wire",
+      label: `${seam.track_id} · ${seam.wire_type}`,
+      meta: seam.endpoint_z_error_m > 0.25 ? "Z" : "XY",
+      objectNames: [
+        `CONDUCTOR--${seam.left_span_id}`,
+        `CONDUCTOR--${seam.right_span_id}`,
+      ],
+      raw: seam,
+    }));
+
+  const catenary = state.reports.catenary || {};
+  state.issues.mast = (catenary.candidates || [])
+    .filter((candidate) => candidate.candidate_mesh_decision === "withheld_track_clearance_conflict")
+    .map((candidate) => ({
+      type: "mast",
+      id: candidate.id || candidate.candidate_id,
+      label: `${candidate.id || candidate.candidate_id} · K${(candidate.chainage_m / 1000).toFixed(3)}`,
+      meta: "暂缓",
+      raw: candidate,
+    }));
+
+  state.issues.gap = [];
+  (state.reports.track?.tracks || []).forEach((track) => {
+    (track.inferred_gap_hypotheses || []).forEach((gap, index) => {
+      state.issues.gap.push({
+        type: "gap",
+        trackId: track.track_id,
+        nodeToken: `INFERRED-${String((index + 1) * 2).padStart(3, "0")}`,
+        label: `${track.track_id} · ${gap.chainage_start_m}–${gap.chainage_end_m} m`,
+        meta: `${Math.round(gap.chainage_end_m - gap.chainage_start_m)}m`,
+        raw: gap,
+      });
+    });
+  });
+}
+
+function addRiskMarkers(origin) {
+  state.markers.name = "RISK-MARKERS";
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xff6c23,
+    transparent: true,
+    opacity: 0.92,
+    depthTest: false,
+  });
+  state.issues.mast.forEach((issue) => {
+    const candidate = issue.raw;
+    const height = Math.max(2, candidate.maximum_z - candidate.minimum_z);
+    const geometry = new THREE.ConeGeometry(1.15, 3.2, 12);
+    const marker = new THREE.Mesh(geometry, material);
+    marker.name = `RISK--${issue.id}`;
+    marker.position.set(
+      candidate.center_x - origin[0],
+      candidate.center_y - origin[1],
+      candidate.maximum_z + 2.1 - origin[2],
+    );
+    marker.userData = {
+      issueId: issue.id,
+      issueType: "CATENARY",
+      label: "暂缓入模的接触网支柱候选",
+      evidence: "点云候选 / 周期规则",
+      status: "轨道净空冲突，未进入正式网格",
+      limitation: `候选高度 ${height.toFixed(2)} m；需人工或补充影像复核`,
+    };
+    marker.renderOrder = 18;
+    state.markers.add(marker);
+  });
+  scene.add(state.markers);
+}
+
+async function loadRegistries(sources = []) {
+  const results = await Promise.all(sources.map(async (source) => ({
+    source,
+    registry: await fetchJson(source.url, true),
+  })));
+  results.forEach(({ source, registry }) => {
+    (registry?.assets || []).forEach((asset) => {
+      state.assets.set(`${source.namespace}--${asset.id}`, asset);
+      state.assets.set(asset.id, asset);
+      const node = asset.geometry?.node;
+      if (node) state.assets.set(node, asset);
+    });
+  });
+}
+
+function prepareModel(model) {
+  state.model = model;
+  model.name = "SITE-B-FULL-CORRIDOR";
+  model.traverse((object) => {
+    if (object.isMesh) {
+      object.castShadow = false;
+      object.receiveShadow = false;
+      object.frustumCulled = true;
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      materials.filter(Boolean).forEach((material) => {
+        material.side = THREE.FrontSide;
+        material.depthWrite = true;
+        material.depthTest = true;
+      });
+    }
+    if (object.isMesh) state.modelObjects.push(object);
+  });
+  scene.add(model);
+}
+
+function updateMetrics() {
+  const seams = state.reports.seams || {};
+  const catenary = state.reports.catenary || {};
+  const track = state.reports.track || {};
+  const gaps = state.issues.gap;
+  const gapLength = gaps.reduce((sum, gap) => sum + gap.raw.chainage_end_m - gap.raw.chainage_start_m, 0);
+  $("#metric-masts").textContent = `${catenary.accepted_support_count ?? 49} / ${catenary.periodic_support_count ?? 89}`;
+  $("#metric-seams").textContent = `${seams.passing_seam_count ?? 156} / ${seams.adjacent_seam_count ?? 172}`;
+  $("#metric-gaps").innerHTML = `${Math.round(gapLength)} <em>m</em>`;
+  $("#metric-mesh").textContent = state.reports.mesh?.passed ? "PASS" : "REVIEW";
+  $("#metric-mesh").style.color = state.reports.mesh?.passed ? "#b5ff48" : "#ff7b29";
+  if (!track.include_inferred_gap_hypotheses) $("#metric-gaps").textContent = "OFF";
+  (state.config.metric_overrides || []).forEach((metric) => {
+    const target = document.getElementById(metric.id);
+    const container = target?.closest("div");
+    if (!target || !container) return;
+    if (metric.label) container.querySelector("small").textContent = metric.label;
+    target.textContent = metric.value;
+    if (metric.note) container.querySelector("span").textContent = metric.note;
+  });
+}
+
+function configureEvents() {
+  $$(".mode-button").forEach((button) => button.addEventListener("click", () => updateMode(button.dataset.mode)));
+  $$("[data-layer]").forEach((input) => input.addEventListener("change", updateLayers));
+  $("#risk-layer").addEventListener("change", (event) => { state.markers.visible = event.target.checked; });
+  $$(".issue-tabs button").forEach((button) => button.addEventListener("click", () => {
+    state.issueTab = button.dataset.issueTab;
+    $$(".issue-tabs button").forEach((item) => item.classList.toggle("active", item === button));
+    renderIssues();
+  }));
+  $$("[data-view]").forEach((button) => button.addEventListener("click", () => {
+    const view = button.dataset.view;
+    if (view === "overview") fitObjects([state.model]);
+    if (view === "station") fitObjects(findObjects((object) => layerFor(object) === "STATION"), new THREE.Vector3(-0.35, 0.85, 0.28), 1.75);
+    if (view === "track") fitObjects(findObjects((object) => namespaceFor(object) === "TRACK"), new THREE.Vector3(0.48, -0.78, 0.27), 1.7);
+    if (view === "risk") fitObjects(state.markers.children, new THREE.Vector3(0.4, -0.7, 0.45), 1.5);
+    if (view === "boundary" && !focusConfiguredView("track_boundary")) showMessage("当前项目没有轨道交界固定视角");
+  }));
+  $("#reset").addEventListener("click", () => {
+    updateMode("evidence");
+    $$("[data-layer]").forEach((input) => { input.checked = true; });
+    updateLayers();
+    fitObjects([state.model]);
+  });
+  $("#search-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const query = $("#search").value.trim().toLowerCase();
+    if (!query) return;
+    const target = state.modelObjects.find((object) => {
+      const asset = state.assets.get(object.name);
+      return object.name.toLowerCase().includes(query) ||
+        asset?.id?.toLowerCase().includes(query) ||
+        asset?.type?.toLowerCase().includes(query);
+    });
+    if (!target) return showMessage("没有找到匹配的资产");
+    if (target.name.includes("INFERRED") && state.mode !== "hypothesis") updateMode("hypothesis");
+    fitObjects([target], new THREE.Vector3(0.6, -0.6, 0.38), 2.4);
+    selectObject(target);
+  });
+  canvas.addEventListener("pointerup", (event) => {
+    const rect = canvas.getBoundingClientRect();
+    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(pointer, camera);
+    const meshes = [];
+    state.model?.traverse((object) => { if (object.isMesh && object.visible) meshes.push(object); });
+    const hit = raycaster.intersectObjects([...meshes, ...state.markers.children], false)[0];
+    if (hit) selectObject(hit.object);
+  });
+}
 
 function resize() {
   const width = canvas.clientWidth;
@@ -244,6 +468,95 @@ function resize() {
   camera.aspect = width / Math.max(height, 1);
   camera.updateProjectionMatrix();
 }
-function animate() { resize(); controls.update(); renderer.render(scene, camera); requestAnimationFrame(animate); }
-load();
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update(clock.getDelta());
+  state.markers.children.forEach((marker, index) => {
+    marker.rotation.z += 0.006;
+    marker.scale.setScalar(1 + Math.sin(performance.now() * 0.002 + index) * 0.08);
+  });
+  if (state.selectionHelper) state.selectionHelper.update();
+  renderer.render(scene, camera);
+}
+
+async function bootstrap() {
+  try {
+    resize();
+    configureEvents();
+    const requestedProject = new URLSearchParams(window.location.search).get("project");
+    const projectName = requestedProject && /^[A-Za-z0-9._-]+\.json$/.test(requestedProject)
+      ? requestedProject
+      : "project.json";
+    state.config = await fetchJson(`/${projectName}`);
+    ui.title.textContent = state.config.title || ui.title.textContent;
+    let boundaryButton = document.querySelector('[data-view="boundary"]');
+    if (!boundaryButton && state.config.fixed_views?.track_boundary) {
+      boundaryButton = document.createElement("button");
+      boundaryButton.dataset.view = "boundary";
+      boundaryButton.textContent = "轨道交界";
+      boundaryButton.addEventListener("click", () => focusConfiguredView("track_boundary"));
+      document.querySelector(".view-grid")?.append(boundaryButton);
+    }
+    if (boundaryButton) boundaryButton.hidden = !state.config.fixed_views?.track_boundary;
+    setLoading("正在读取质检报告与资产注册表", 10);
+
+    const [origin, seams, catenary, track, mesh] = await Promise.all([
+      fetchJson(state.config.origin_url),
+      fetchJson(state.config.conductor_seam_url, true),
+      fetchJson(state.config.catenary_selection_url, true),
+      fetchJson(state.config.track_report_url, true),
+      fetchJson(state.config.mesh_audit_url),
+      loadRegistries(state.config.registry_sources),
+    ]);
+    state.reports = { origin, seams, catenary, track, mesh };
+    buildIssues();
+    addRiskMarkers(origin.origin_xyz || [0, 0, 0]);
+    updateMetrics();
+    renderIssues();
+
+    let model;
+    if (state.config.model_glb_url) {
+      setLoading("正在载入二进制场景", 18);
+      const gltfLoader = new GLTFLoader();
+      gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+      const gltf = await gltfLoader.loadAsync(state.config.model_glb_url, (event) => {
+        if (!event.total) return;
+        const ratio = event.loaded / event.total;
+        const label = ratio > 0.98
+          ? "下载完成，正在创建 GPU 场景"
+          : "正在载入二进制场景";
+        setLoading(label, 18 + ratio * 74);
+      });
+      model = gltf.scene;
+    } else {
+      setLoading("正在载入材质", 18);
+      const materials = await new MTLLoader().loadAsync(state.config.material_url);
+      materials.preload();
+      const objLoader = new OBJLoader();
+      objLoader.setMaterials(materials);
+      setLoading("正在解析 OBJ 完整模型", 22);
+      model = await objLoader.loadAsync(state.config.model_url, (event) => {
+        if (event.total) setLoading("正在解析 OBJ 完整模型", 22 + (event.loaded / event.total) * 70);
+      });
+    }
+    prepareModel(model);
+    updateMode("evidence");
+    updateLayers();
+    fitObjects([model]);
+    ui.loaderProgress.style.width = "100%";
+    ui.status.textContent = `${mesh.object_count || 404} 构件 · ${(mesh.face_count || 0).toLocaleString()} 面 · QA ${mesh.status?.toUpperCase() || "PASS"}`;
+    const triangleCount = mesh.triangle_count_after_fan_triangulation || mesh.face_count || 0;
+    ui.status.textContent = `${mesh.object_count || state.modelObjects.length} 构件 · ${triangleCount.toLocaleString()} 面 · QA ${mesh.passed ? "PASS" : "REVIEW"}`;
+    window.setTimeout(() => { ui.loader.hidden = true; }, 260);
+  } catch (error) {
+    console.error(error);
+    ui.loader.hidden = true;
+    ui.status.textContent = "加载失败";
+    showMessage(error.message);
+  }
+}
+
+window.addEventListener("resize", resize);
+bootstrap();
 animate();

@@ -1,0 +1,6 @@
+{
+  "schema_version": "railway.platform-mesh-settings.v1",
+  "inferred_platform_thickness_m": 0.35,
+  "observed_top_confidence": 0.88,
+  "inferred_volume_confidence": 0.55
+}
