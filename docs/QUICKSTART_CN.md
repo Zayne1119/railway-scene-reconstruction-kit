@@ -1,21 +1,23 @@
 # 快速上手：从空目录到第一个 Pilot
 
+> 首次拿到代码，请先按 [新人交接与一键演示](NEWCOMER_HANDOFF_CN.md) 跑通环境和模型网页。本页是**真实数据 Pilot** 的后续操作，不是安装前必须逐项人工签核的表格；可由 AI 按 [接手指令](AI_HANDOFF_CN.md) 连续执行，只在真实阻塞时提问。
+
 本页面向第一次接手项目的同事。完成后，你应得到一个通过配置校验的数据安全项目目录、一份输入审计报告、一份走廊分段计划和一个 20–50 m Pilot 点云。
 
 ## 1. 准备环境
 
-推荐环境：
+推荐环境（Windows 可由 `Railway.ps1 setup` 安装项目内运行时）：
 
 - Windows 10/11；
 - Python 3.11；
 - PowerShell 7 或 Windows PowerShell；
-- 后续需要模型导出时安装团队指定版本的 Blender；
+- 基础 OBJ/GLB 不需要 Blender；专用 Blender 导出/渲染再按需安装；
 - 后续需要 Web 页面时安装仓库规定版本的 Node.js。
 
 在仓库根目录执行：
 
 ```powershell
-.\scripts\bootstrap.ps1
+powershell -ExecutionPolicy Bypass -File .\Railway.ps1 setup
 .\.venv\Scripts\Activate.ps1
 railway-recon --version
 ```
@@ -34,7 +36,7 @@ python scripts\run_tests.py
 
 安装了开发依赖时，也可以运行 `python -m pytest` 获得同一组测试结果。
 
-测试失败时先停止，不要开始生产项目。把完整错误、Python 版本和当前 Git commit 记录到问题单。
+公共代码回归失败时先定位受影响环节，不发布为正式成果。由 AI 汇总完整错误和版本即可，不要求新人额外建立逐项人工签核工单。
 
 ## 3. 建立项目骨架
 

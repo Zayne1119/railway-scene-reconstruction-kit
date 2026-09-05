@@ -4,6 +4,8 @@ import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
 import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+import { fetchJson, missingProject, selectProject, validateProject } from "./project-loading.js";
+import { perspectiveFitDistance } from "./scene-math.js";
 import "./style.css";
 
 const $ = (selector) => document.querySelector(selector);
@@ -36,17 +38,15 @@ const state = {
   selectionHelper: null,
 };
 
-const renderer = new THREE.WebGLRenderer({
-  canvas,
-  antialias: true,
-  alpha: true,
-  logarithmicDepthBuffer: true,
-  powerPreference: "high-performance",
-});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.08;
+let renderer;
+
+function initializeRenderer() {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, logarithmicDepthBuffer: true, powerPreference: "high-performance" });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.08;
+}
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x071822);
@@ -90,18 +90,6 @@ function showMessage(text) {
   ui.message.hidden = false;
   window.clearTimeout(showMessage.timer);
   showMessage.timer = window.setTimeout(() => { ui.message.hidden = true; }, 3600);
-}
-
-async function fetchJson(url, optional = false) {
-  if (!url) return null;
-  try {
-    const response = await fetch(url, { cache: "no-store" });
-    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-    return await response.json();
-  } catch (error) {
-    if (optional) return null;
-    throw new Error(`读取 ${url} 失败：${error.message}`);
-  }
 }
 
 function rootObjectFor(object) {
@@ -154,8 +142,7 @@ function fitObjects(objects, direction = new THREE.Vector3(0.7, -0.55, 0.42), pa
   }
   const sphere = box.getBoundingSphere(new THREE.Sphere());
   const radius = Math.max(sphere.radius, 2);
-  const fov = THREE.MathUtils.degToRad(camera.fov);
-  const distance = (radius / Math.sin(fov / 2)) * padding;
+  const distance = perspectiveFitDistance(radius, camera.fov, Math.max(camera.aspect, 0.01), padding);
   camera.position.copy(sphere.center).add(direction.clone().normalize().multiplyScalar(distance));
   camera.near = Math.max(0.05, distance / 10000);
   camera.far = Math.max(5000, distance + radius * 14);
@@ -211,7 +198,7 @@ function updateMode(mode) {
     if (object.name.includes("INFERRED")) object.visible = mode === "hypothesis";
   });
   ui.modeNote.textContent = mode === "evidence"
-    ? "证据版：隐藏 6 段有界推断轨道，只显示现有证据支持的构件"
+    ? `证据版：隐藏 ${state.issues.gap.length} 段报告中的推断轨道${state.config?.synthetic_demo ? "；当前仅为合成演示" : "；具体来源以资产登记为准"}`
     : "推断补全版：橙色轨道为规则补全假设，不等同于现场观测";
   if (mode === "hypothesis") {
     const length = state.issues.gap.reduce(
@@ -252,7 +239,8 @@ function renderIssues() {
   if (!issues.length) {
     const empty = document.createElement("div");
     empty.className = "issue-empty";
-    empty.textContent = "本类问题已闭环";
+    const reportKey = { wire: "seams", mast: "catenary", gap: "track" }[state.issueTab];
+    empty.textContent = state.reports[reportKey] ? "当前报告未列出本类待处理问题" : "未提供本类报告，不能据此判定通过";
     ui.issueList.append(empty);
     return;
   }
@@ -371,7 +359,7 @@ async function loadRegistries(sources = []) {
 
 function prepareModel(model) {
   state.model = model;
-  model.name = "SITE-B-FULL-CORRIDOR";
+  model.name = state.config.synthetic_demo ? "SYNTHETIC-DEMO" : "LOCAL-PROJECT";
   model.traverse((object) => {
     if (object.isMesh) {
       object.castShadow = false;
@@ -395,12 +383,12 @@ function updateMetrics() {
   const track = state.reports.track || {};
   const gaps = state.issues.gap;
   const gapLength = gaps.reduce((sum, gap) => sum + gap.raw.chainage_end_m - gap.raw.chainage_start_m, 0);
-  $("#metric-masts").textContent = `${catenary.accepted_support_count ?? 49} / ${catenary.periodic_support_count ?? 89}`;
-  $("#metric-seams").textContent = `${seams.passing_seam_count ?? 156} / ${seams.adjacent_seam_count ?? 172}`;
+  $("#metric-masts").textContent = `${catenary.accepted_support_count ?? "—"} / ${catenary.periodic_support_count ?? "—"}`;
+  $("#metric-seams").textContent = `${seams.passing_seam_count ?? "—"} / ${seams.adjacent_seam_count ?? "—"}`;
   $("#metric-gaps").innerHTML = `${Math.round(gapLength)} <em>m</em>`;
   $("#metric-mesh").textContent = state.reports.mesh?.passed ? "PASS" : "REVIEW";
   $("#metric-mesh").style.color = state.reports.mesh?.passed ? "#b5ff48" : "#ff7b29";
-  if (!track.include_inferred_gap_hypotheses) $("#metric-gaps").textContent = "OFF";
+  if (!track.include_inferred_gap_hypotheses) $("#metric-gaps").textContent = state.reports.track ? "OFF" : "—";
   (state.config.metric_overrides || []).forEach((metric) => {
     const target = document.getElementById(metric.id);
     const container = target?.closest("div");
@@ -464,7 +452,7 @@ function configureEvents() {
 function resize() {
   const width = canvas.clientWidth;
   const height = canvas.clientHeight;
-  renderer.setSize(width, height, false);
+  renderer?.setSize(width, height, false);
   camera.aspect = width / Math.max(height, 1);
   camera.updateProjectionMatrix();
 }
@@ -477,18 +465,18 @@ function animate() {
     marker.scale.setScalar(1 + Math.sin(performance.now() * 0.002 + index) * 0.08);
   });
   if (state.selectionHelper) state.selectionHelper.update();
-  renderer.render(scene, camera);
+  renderer?.render(scene, camera);
 }
 
 async function bootstrap() {
+  let selection;
   try {
-    resize();
     configureEvents();
-    const requestedProject = new URLSearchParams(window.location.search).get("project");
-    const projectName = requestedProject && /^[A-Za-z0-9._-]+\.json$/.test(requestedProject)
-      ? requestedProject
-      : "project.json";
-    state.config = await fetchJson(`/${projectName}`);
+    selection = selectProject(new URLSearchParams(window.location.search));
+    state.config = validateProject(await fetchJson(selection.url), selection);
+    $("#synthetic-banner").hidden = !state.config.synthetic_demo;
+    initializeRenderer();
+    resize();
     ui.title.textContent = state.config.title || ui.title.textContent;
     let boundaryButton = document.querySelector('[data-view="boundary"]');
     if (!boundaryButton && state.config.fixed_views?.track_boundary) {
@@ -502,7 +490,7 @@ async function bootstrap() {
     setLoading("正在读取质检报告与资产注册表", 10);
 
     const [origin, seams, catenary, track, mesh] = await Promise.all([
-      fetchJson(state.config.origin_url),
+      fetchJson(state.config.origin_url, !state.config.origin_url),
       fetchJson(state.config.conductor_seam_url, true),
       fetchJson(state.config.catenary_selection_url, true),
       fetchJson(state.config.track_report_url, true),
@@ -511,7 +499,7 @@ async function bootstrap() {
     ]);
     state.reports = { origin, seams, catenary, track, mesh };
     buildIssues();
-    addRiskMarkers(origin.origin_xyz || [0, 0, 0]);
+    addRiskMarkers(origin?.origin_xyz || [0, 0, 0]);
     updateMetrics();
     renderIssues();
 
@@ -541,22 +529,38 @@ async function bootstrap() {
       });
     }
     prepareModel(model);
+    if (!state.modelObjects.length) throw new Error("模型文件已读取，但场景没有可显示的网格对象。请检查导出结果。");
     updateMode("evidence");
     updateLayers();
     fitObjects([model]);
     ui.loaderProgress.style.width = "100%";
-    ui.status.textContent = `${mesh.object_count || 404} 构件 · ${(mesh.face_count || 0).toLocaleString()} 面 · QA ${mesh.status?.toUpperCase() || "PASS"}`;
     const triangleCount = mesh.triangle_count_after_fan_triangulation || mesh.face_count || 0;
-    ui.status.textContent = `${mesh.object_count || state.modelObjects.length} 构件 · ${triangleCount.toLocaleString()} 面 · QA ${mesh.passed ? "PASS" : "REVIEW"}`;
+    ui.status.textContent = `模型已加载 · ${state.modelObjects.length} 网格对象 · ${triangleCount.toLocaleString()} 报告面数 · QA ${mesh.passed ? "PASS" : "REVIEW"}`;
+    ui.status.dataset.state = "ready";
+    ui.status.dataset.modelLoaded = "true";
+    ui.status.dataset.objectCount = String(state.modelObjects.length);
+    $("#metric-objects").textContent = String(state.modelObjects.length);
     window.setTimeout(() => { ui.loader.hidden = true; }, 260);
   } catch (error) {
-    console.error(error);
     ui.loader.hidden = true;
-    ui.status.textContent = "加载失败";
-    showMessage(error.message);
+    if (missingProject(error, selection)) {
+      ui.status.textContent = "等待生成演示或配置项目";
+      ui.status.dataset.state = "onboarding";
+      $("#onboarding-reason").textContent = selection.demo
+        ? "合成演示尚未生成。请在工具包根目录运行下列命令，然后打开演示。"
+        : "未找到 project.json。可以先打开已生成的演示，或运行下列命令生成；不会自动读取其他项目。";
+      $("#onboarding").hidden = false;
+    } else {
+      console.error(error);
+      ui.status.textContent = "加载失败 · 可重试";
+      ui.status.dataset.state = "error";
+      $("#load-error-detail").textContent = error.message || String(error);
+      $("#load-error").hidden = false;
+    }
   }
 }
 
+$$("[data-retry]").forEach((button) => button.addEventListener("click", () => window.location.reload()));
 window.addEventListener("resize", resize);
 bootstrap();
 animate();

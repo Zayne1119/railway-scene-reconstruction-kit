@@ -1,26 +1,26 @@
 {
   "title": "Railway corridor · evidence and hypothesis review",
-  "model_glb_url": "/@fs/D:/approved-project/scene.web.lod.glb",
-  "full_model_glb_url": "/@fs/D:/approved-project/scene.web.glb",
-  "model_url": "/@fs/D:/approved-project/scene.obj",
-  "material_url": "/@fs/D:/approved-project/scene.mtl",
-  "origin_url": "/@fs/D:/approved-project/model_origin.json",
-  "mesh_audit_url": "/@fs/D:/approved-project/mesh_audit.json",
-  "conductor_seam_url": "/@fs/D:/approved-project/conductor_seam_audit.json",
-  "catenary_selection_url": "/@fs/D:/approved-project/catenary_selection_report.json",
-  "track_report_url": "/@fs/D:/approved-project/track_graph_mesh_build.json",
+  "model_glb_url": "/models/scene.web.lod.glb",
+  "full_model_glb_url": "/models/scene.web.glb",
+  "model_url": "/models/scene.obj",
+  "material_url": "/models/scene.mtl",
+  "origin_url": "/data/model_origin.json",
+  "mesh_audit_url": "/data/mesh_audit.json",
+  "conductor_seam_url": "/data/conductor_seam_audit.json",
+  "catenary_selection_url": "/data/catenary_selection_report.json",
+  "track_report_url": "/data/track_graph_mesh_build.json",
   "registry_sources": [
     {
       "namespace": "TRACK",
-      "url": "/@fs/D:/approved-project/track_asset_registry.json"
+      "url": "/data/track_asset_registry.json"
     },
     {
       "namespace": "CATENARY",
-      "url": "/@fs/D:/approved-project/catenary_asset_registry.json"
+      "url": "/data/catenary_asset_registry.json"
     },
     {
       "namespace": "CONDUCTOR",
-      "url": "/@fs/D:/approved-project/conductor_asset_registry.json"
+      "url": "/data/conductor_asset_registry.json"
     }
   ]
 }

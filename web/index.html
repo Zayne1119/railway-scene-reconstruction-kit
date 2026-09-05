@@ -4,24 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#06131b" />
-    <title>Site B · 铁路重建证据对比</title>
+    <title>铁路重建 · 本地模型查看器</title>
   </head>
   <body>
     <div id="app">
       <header class="topbar">
         <div>
-          <span class="eyebrow">SITE B / EVIDENCE-AWARE RECONSTRUCTION</span>
-          <h1 id="title">4.4 公里铁路重建 · 证据与推断对比</h1>
+          <span class="eyebrow">RAILWAY / LOCAL MODEL VIEWER</span>
+          <h1 id="title">铁路重建 · 本地模型查看器</h1>
         </div>
         <div class="mode-switch" aria-label="模型版本">
           <button class="mode-button active" data-mode="evidence">证据版</button>
           <button class="mode-button" data-mode="hypothesis">推断补全版</button>
         </div>
-        <div id="status" class="status"><i></i><span>正在读取项目</span></div>
+        <div id="status" class="status" role="status"><i></i><span data-testid="viewer-status" data-state="loading" data-model-loaded="false" data-object-count="0">正在读取项目</span></div>
       </header>
 
       <main class="viewer-shell">
         <canvas id="viewport" aria-label="铁路三维模型视窗"></canvas>
+        <div id="synthetic-banner" class="synthetic-banner" data-testid="synthetic-banner" hidden>合成演示 · SYNTHETIC DEMO · 非真实站场 / 非测量成果 / 非客户模型</div>
 
         <aside class="panel layer-panel">
           <div class="panel-kicker">SCENE CONTROL</div>
@@ -65,11 +66,35 @@
           </section>
         </aside>
 
-        <div class="legend-note" id="mode-note">仅显示由现有点云与规则闭环支持的几何</div>
+        <div class="legend-note" id="mode-note">等待项目加载；尚未作出质量结论</div>
         <div id="message" class="message" hidden></div>
+        <section id="onboarding" class="entry-overlay" data-testid="onboarding" hidden>
+          <div class="entry-card">
+            <span class="panel-kicker">LOCAL QUICK START</span>
+            <h2>生成演示 / 安装入口</h2>
+            <p id="onboarding-reason">尚未配置本地模型。可以先查看独立生成的合成演示。</p>
+            <p>Windows 统一入口（在工具包根目录运行；仅生成、不另起服务）：</p>
+            <pre>powershell -ExecutionPolicy Bypass -File .\Railway.ps1 demo -NoStart</pre>
+            <p>已经安装可加 <code>-SkipSetup</code>。跨平台手动命令：</p>
+            <pre>uv sync --frozen --extra dev
+uv run python scripts/build_onboarding_demo.py</pre>
+            <p>演示仅使用数学构造，不读取客户模型。生成后点击“打开合成演示”。若演示目录已存在，生成器不会覆盖。</p>
+            <div class="entry-actions"><a href="/?demo=1" data-testid="open-demo">打开合成演示</a><button data-retry>重新检查</button></div>
+            <p>正式项目仍使用 <code>web/public/project.json</code>；独立配置可用 <code>?project=文件名.json</code>。详细说明见 <code>web/README.md</code>。</p>
+          </div>
+        </section>
+        <section id="load-error" class="entry-overlay" data-testid="load-error" role="alert" hidden>
+          <div class="entry-card">
+            <span class="panel-kicker">LOAD ERROR</span>
+            <h2>模型未能加载</h2>
+            <p id="load-error-detail"></p>
+            <p>请检查配置、资源地址和访问权限。401 / 403 等访问限制不会被忽略，也不会自动切换到演示或其他项目。</p>
+            <div class="entry-actions"><button data-retry>重试当前项目</button><a href="/">返回安装入口</a></div>
+          </div>
+        </section>
         <div id="loader" class="loader">
           <div class="loader-card">
-            <span class="panel-kicker">LOADING 4.4 KM SCENE</span>
+            <span class="panel-kicker">LOADING LOCAL SCENE</span>
             <strong id="loader-label">正在载入模型</strong>
             <div class="progress"><i id="loader-progress"></i></div>
           </div>
@@ -77,11 +102,11 @@
       </main>
 
       <footer class="metrics">
-        <div><small>重建走廊</small><strong>4.4 <em>km</em></strong></div>
-        <div><small>接触网支柱</small><strong id="metric-masts">49 / 89</strong><span>入模 / 周期候选</span></div>
-        <div><small>导线接缝</small><strong id="metric-seams">156 / 172</strong><span>通过 / 总计</span></div>
-        <div><small>推断轨道</small><strong id="metric-gaps">950 <em>m</em></strong><span>6 个有界缺口</span></div>
-        <div><small>网格体检</small><strong id="metric-mesh">PASS</strong><span>无无效与重复三角面</span></div>
+        <div><small>已加载网格对象</small><strong id="metric-objects" data-testid="model-object-count">0</strong><span>实际场景对象计数</span></div>
+        <div><small>接触网支柱</small><strong id="metric-masts">—</strong><span>入模 / 周期候选</span></div>
+        <div><small>导线接缝</small><strong id="metric-seams">—</strong><span>通过 / 总计</span></div>
+        <div><small>推断轨道</small><strong id="metric-gaps">—</strong><span>报告中的有界缺口</span></div>
+        <div><small>网格体检</small><strong id="metric-mesh">未加载</strong><span>仅表示所载报告的检查结果</span></div>
       </footer>
     </div>
     <script type="module" src="/src/main.js"></script>

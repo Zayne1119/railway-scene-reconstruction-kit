@@ -1,0 +1,819 @@
+{
+  "adaptation_disclosure": {
+    "confidence_semantics": "qualitative_not_calibrated_probability",
+    "fallback_semantics": "topology_inference_not_observation_verified",
+    "freeze_semantics": "new_source_binding_required_not_external_preregistration",
+    "group_allocation": "unchanged_from_embedded_base_protocol",
+    "numeric_thresholds": "unchanged_from_embedded_base_protocol",
+    "revision_role": "method_development_after_v1_development_and_validation",
+    "test_result_use_for_this_revision": "none",
+    "v1_development_results_observed": true,
+    "v1_validation_results_observed": true
+  },
+  "base_protocol": {
+    "conditions": [
+      "normal",
+      "gap",
+      "wrong_connection",
+      "duplicate",
+      "normal_shallow_crossing",
+      "normal_grade_separated_crossing",
+      "normal_endpoint_jitter",
+      "normal_no_observations",
+      "gap_no_observations",
+      "wrong_connection_no_observations",
+      "wrong_connection_sparse_observations",
+      "gap_with_nearby_alternative"
+    ],
+    "counts": {
+      "development": 40,
+      "test": 60,
+      "validation": 20
+    },
+    "evaluation": {
+      "abstention_rule": "unassigned_causes_are_missed_diagnoses_not_correct_gaps",
+      "analysis_unit": "base_layout_group",
+      "condition_pairing": "all_conditions_stay_with_their_base_layout",
+      "detection_comparison": "identical_shared_geometry_alarms_not_an_improvement_claim",
+      "partial_test_allowed": false,
+      "primary_endpoint": "diagnosis_recall_including_abstentions",
+      "test_requires_verified_freeze": true
+    },
+    "groups": [
+      {
+        "family_index": 0,
+        "group_id": "a05672107ee8fe6118de1a1c3b63c059",
+        "seed": 7927164801019228220,
+        "split": "development"
+      },
+      {
+        "family_index": 1,
+        "group_id": "c1ecaf84505e40f88189b2a00c4ec5ca",
+        "seed": 194333741571604364,
+        "split": "development"
+      },
+      {
+        "family_index": 2,
+        "group_id": "8e1223548f843c13fd247b0b9ead7d04",
+        "seed": 6122617779088497315,
+        "split": "development"
+      },
+      {
+        "family_index": 3,
+        "group_id": "9af31574961549c0df322ac649024749",
+        "seed": 3358677265003983821,
+        "split": "development"
+      },
+      {
+        "family_index": 4,
+        "group_id": "ad450b572d9a44d94754e2461426f318",
+        "seed": 7306156611136701998,
+        "split": "development"
+      },
+      {
+        "family_index": 5,
+        "group_id": "427da808d8119cbf44bfc5710815b316",
+        "seed": 2462836197206888138,
+        "split": "development"
+      },
+      {
+        "family_index": 0,
+        "group_id": "b9678e47e7d5b378751c8c9b7e6ac452",
+        "seed": 8540015400771836759,
+        "split": "development"
+      },
+      {
+        "family_index": 1,
+        "group_id": "9a65bf04b073c82034494668d32c3e53",
+        "seed": 1710356382382442395,
+        "split": "development"
+      },
+      {
+        "family_index": 2,
+        "group_id": "e78ee3e51c38b5996bb542f65a4d4b80",
+        "seed": 7038246387276839976,
+        "split": "development"
+      },
+      {
+        "family_index": 3,
+        "group_id": "b3c36750997abad5d4f5d617095e969c",
+        "seed": 4375062861433724995,
+        "split": "development"
+      },
+      {
+        "family_index": 4,
+        "group_id": "b7b8f9a2e7d86dfae8281ea480e3e00b",
+        "seed": 3945282188287243903,
+        "split": "development"
+      },
+      {
+        "family_index": 5,
+        "group_id": "08d895f138b0614a22a6680ec4ce0978",
+        "seed": 723998417542854820,
+        "split": "development"
+      },
+      {
+        "family_index": 0,
+        "group_id": "4f1e0900255efb0f6f79793d909a25a7",
+        "seed": 8478947747871942298,
+        "split": "development"
+      },
+      {
+        "family_index": 1,
+        "group_id": "f3aa76dba67c1487b85e94f359d2d47e",
+        "seed": 5800695253125407057,
+        "split": "development"
+      },
+      {
+        "family_index": 2,
+        "group_id": "8dec9f35b743a03420896bd06d1bdc08",
+        "seed": 3170207984083013613,
+        "split": "development"
+      },
+      {
+        "family_index": 3,
+        "group_id": "f0e3ac9cec5c4db35dbf0c2636132f08",
+        "seed": 7306453991275215726,
+        "split": "development"
+      },
+      {
+        "family_index": 4,
+        "group_id": "5b2ed6e639cd4f1221eb9060763c86d6",
+        "seed": 4232313155002403722,
+        "split": "development"
+      },
+      {
+        "family_index": 5,
+        "group_id": "cc9a2b4c6a27c55e895514c91b36a8db",
+        "seed": 5064397632244139505,
+        "split": "development"
+      },
+      {
+        "family_index": 0,
+        "group_id": "d570fac8b5b86674e21c5e8d9dc76de9",
+        "seed": 6030423396062923752,
+        "split": "development"
+      },
+      {
+        "family_index": 1,
+        "group_id": "6cef7ee87cf4cbd2a2cb69dd7160e444",
+        "seed": 3648076756172209224,
+        "split": "development"
+      },
+      {
+        "family_index": 2,
+        "group_id": "0b037ee59e28af3f63a5026da92698a9",
+        "seed": 8806666940121412614,
+        "split": "development"
+      },
+      {
+        "family_index": 3,
+        "group_id": "2eed153fa1971603adb25187c153ca0b",
+        "seed": 5038201785637736018,
+        "split": "development"
+      },
+      {
+        "family_index": 4,
+        "group_id": "cf117bd557ab9e4cbdc9731d17c6864b",
+        "seed": 7772674933302885411,
+        "split": "development"
+      },
+      {
+        "family_index": 5,
+        "group_id": "7937b1c4fc64b0e3d1f1328ed69003d4",
+        "seed": 8795888383670084405,
+        "split": "development"
+      },
+      {
+        "family_index": 0,
+        "group_id": "9b5847cdbef439ed3fcb0ca3a3120940",
+        "seed": 1569811626573652744,
+        "split": "development"
+      },
+      {
+        "family_index": 1,
+        "group_id": "976699b34c3ae76175983deab912929d",
+        "seed": 4107722974998416501,
+        "split": "development"
+      },
+      {
+        "family_index": 2,
+        "group_id": "3180cb635372e33ad0f948049595ecd0",
+        "seed": 816236091020248483,
+        "split": "development"
+      },
+      {
+        "family_index": 3,
+        "group_id": "9356c3a6bef32a6011398f17dd686a28",
+        "seed": 6343797779818596396,
+        "split": "development"
+      },
+      {
+        "family_index": 4,
+        "group_id": "00404bd6c776f23f9420ce493c537c6b",
+        "seed": 8303295206477593353,
+        "split": "development"
+      },
+      {
+        "family_index": 5,
+        "group_id": "f5b3d1a43956996e8cb50a2729ebd97a",
+        "seed": 4663698027329694543,
+        "split": "development"
+      },
+      {
+        "family_index": 0,
+        "group_id": "b44a4d9a69ecc70a8c968a990c7fd0e8",
+        "seed": 4008450045498224184,
+        "split": "development"
+      },
+      {
+        "family_index": 1,
+        "group_id": "2dbbe2f3b8d1619ed4356a1b61560b97",
+        "seed": 1714961375449725775,
+        "split": "development"
+      },
+      {
+        "family_index": 2,
+        "group_id": "4426286781f497077e3fe3ad241c31af",
+        "seed": 6213101239706575114,
+        "split": "development"
+      },
+      {
+        "family_index": 3,
+        "group_id": "86597a34fdcc1332338f39684763e749",
+        "seed": 3161678699177895995,
+        "split": "development"
+      },
+      {
+        "family_index": 4,
+        "group_id": "fe6808e4028c3f92cd699d7affb6d1e2",
+        "seed": 656946713340078732,
+        "split": "development"
+      },
+      {
+        "family_index": 5,
+        "group_id": "1eb94548755ea5bbb0010ee7b288b1bf",
+        "seed": 5734781799110797713,
+        "split": "development"
+      },
+      {
+        "family_index": 0,
+        "group_id": "79b1a53d4e832d94a8295afd1fd3b53e",
+        "seed": 8715809043015481030,
+        "split": "development"
+      },
+      {
+        "family_index": 1,
+        "group_id": "4eaf59fe971dd3e06ca1a15c0c693174",
+        "seed": 7114174114256224359,
+        "split": "development"
+      },
+      {
+        "family_index": 2,
+        "group_id": "e153a64a9172af9fefcb05cb71392a01",
+        "seed": 6532424431055761269,
+        "split": "development"
+      },
+      {
+        "family_index": 3,
+        "group_id": "358c6d04bf57aeaff75d898ba495eada",
+        "seed": 3468413913341747454,
+        "split": "development"
+      },
+      {
+        "family_index": 0,
+        "group_id": "01b99bd338eb356a9c764889bbee1952",
+        "seed": 383794777818390610,
+        "split": "validation"
+      },
+      {
+        "family_index": 1,
+        "group_id": "612db40859cbf620c273c2411106e5cf",
+        "seed": 3182752373568662223,
+        "split": "validation"
+      },
+      {
+        "family_index": 2,
+        "group_id": "eb5501d5e4f64258641a2c246dd13332",
+        "seed": 6215296149923593992,
+        "split": "validation"
+      },
+      {
+        "family_index": 3,
+        "group_id": "89d4cfaba9703b120ea293794102804f",
+        "seed": 9022866418376041531,
+        "split": "validation"
+      },
+      {
+        "family_index": 4,
+        "group_id": "b574bbd7f63f77dac3bc8f236a64b951",
+        "seed": 3048601079774141641,
+        "split": "validation"
+      },
+      {
+        "family_index": 5,
+        "group_id": "09e33b2f44d8055279b818936d648c69",
+        "seed": 3867548593672235992,
+        "split": "validation"
+      },
+      {
+        "family_index": 0,
+        "group_id": "52f8766039aa51493d0b17d4b3d71350",
+        "seed": 6891065295317186400,
+        "split": "validation"
+      },
+      {
+        "family_index": 1,
+        "group_id": "51b09058107a5b9cd17300310c766de2",
+        "seed": 8103025826925870901,
+        "split": "validation"
+      },
+      {
+        "family_index": 2,
+        "group_id": "60506c976007e20c9d8d1df58b83b106",
+        "seed": 6129216240531260258,
+        "split": "validation"
+      },
+      {
+        "family_index": 3,
+        "group_id": "5c391443281374a18c79769c0d1b2076",
+        "seed": 3810763769812605641,
+        "split": "validation"
+      },
+      {
+        "family_index": 4,
+        "group_id": "9984f2f270af66d93aae7d448d53b41c",
+        "seed": 451369262812379682,
+        "split": "validation"
+      },
+      {
+        "family_index": 5,
+        "group_id": "7afa467d94441a2630d782bed853beb4",
+        "seed": 1843427446834948738,
+        "split": "validation"
+      },
+      {
+        "family_index": 0,
+        "group_id": "1dde7f2eb978baf3d1adfc3ff122db2a",
+        "seed": 4028413160738915490,
+        "split": "validation"
+      },
+      {
+        "family_index": 1,
+        "group_id": "b26db32ebe60359515c26178ed18a014",
+        "seed": 982194597393625964,
+        "split": "validation"
+      },
+      {
+        "family_index": 2,
+        "group_id": "af45a25ab3d80f2470513544307cda4d",
+        "seed": 1605962204445747715,
+        "split": "validation"
+      },
+      {
+        "family_index": 3,
+        "group_id": "05c0d419e4800302f7da6500b3441dec",
+        "seed": 2061936303670424315,
+        "split": "validation"
+      },
+      {
+        "family_index": 4,
+        "group_id": "16930b9e44646c9e3c10840f81cf2db9",
+        "seed": 6048080197262808841,
+        "split": "validation"
+      },
+      {
+        "family_index": 5,
+        "group_id": "2dcd535796941faefd6fbe86a1898be5",
+        "seed": 6261828327591243664,
+        "split": "validation"
+      },
+      {
+        "family_index": 0,
+        "group_id": "248f8a4f3aaae16d53d8bc27538bc6e2",
+        "seed": 2386696320586726324,
+        "split": "validation"
+      },
+      {
+        "family_index": 1,
+        "group_id": "d6fca8ae90b62497f4f9b9316e44198d",
+        "seed": 1284842001344258273,
+        "split": "validation"
+      },
+      {
+        "family_index": 0,
+        "group_id": "a7c782d91ae54a090798d7c474a17513",
+        "seed": 1132841876925637296,
+        "split": "test"
+      },
+      {
+        "family_index": 1,
+        "group_id": "bfe59451e33b15c208b4f2287bf80f02",
+        "seed": 4403962596889587087,
+        "split": "test"
+      },
+      {
+        "family_index": 2,
+        "group_id": "edbb6b597d8b2d6823ef335bd1a9e9f3",
+        "seed": 1943514551039008999,
+        "split": "test"
+      },
+      {
+        "family_index": 3,
+        "group_id": "443df0df53047e0b6f0fe16a235908fd",
+        "seed": 4215468807093798644,
+        "split": "test"
+      },
+      {
+        "family_index": 4,
+        "group_id": "f71d6bcd14a73e40d1fc393bf10f79db",
+        "seed": 3228115778219281884,
+        "split": "test"
+      },
+      {
+        "family_index": 5,
+        "group_id": "8b1d3682b07805ee74a5b27944dd48f3",
+        "seed": 7957668531602471966,
+        "split": "test"
+      },
+      {
+        "family_index": 0,
+        "group_id": "1f274b27672bea5509d8d2f6d9b1caec",
+        "seed": 4611851458935044084,
+        "split": "test"
+      },
+      {
+        "family_index": 1,
+        "group_id": "c25e57c8dddcc14966ca13d363829905",
+        "seed": 3811682378544316488,
+        "split": "test"
+      },
+      {
+        "family_index": 2,
+        "group_id": "e2007a85f148e84ca0674656810480dc",
+        "seed": 6798502280253719248,
+        "split": "test"
+      },
+      {
+        "family_index": 3,
+        "group_id": "dc09cd12725c8ba7515051a4c88afde1",
+        "seed": 5685381833277359693,
+        "split": "test"
+      },
+      {
+        "family_index": 4,
+        "group_id": "4f0fa7d47ec36b0c961350e80a6b2c1d",
+        "seed": 7292568479245655023,
+        "split": "test"
+      },
+      {
+        "family_index": 5,
+        "group_id": "76b759bf92062de26ba94aa644a23e12",
+        "seed": 3294031857237903249,
+        "split": "test"
+      },
+      {
+        "family_index": 0,
+        "group_id": "0be0071fb21056788ca9684e11776e0f",
+        "seed": 219150053739906388,
+        "split": "test"
+      },
+      {
+        "family_index": 1,
+        "group_id": "866de5d17c0a932df2bc86da9128a89e",
+        "seed": 4199857098751081481,
+        "split": "test"
+      },
+      {
+        "family_index": 2,
+        "group_id": "583131f82231eb1b26e546e1f1fbe4cf",
+        "seed": 2363043984560510565,
+        "split": "test"
+      },
+      {
+        "family_index": 3,
+        "group_id": "edfba6f2d8278c8c9e615d1b9c006ac9",
+        "seed": 7298322698566387802,
+        "split": "test"
+      },
+      {
+        "family_index": 4,
+        "group_id": "0e747bd670efbd9432e309bbbb0bcba7",
+        "seed": 7965707517128877472,
+        "split": "test"
+      },
+      {
+        "family_index": 5,
+        "group_id": "4c97c6813e9b1ed73cd0f80201c1025e",
+        "seed": 8026446930732611979,
+        "split": "test"
+      },
+      {
+        "family_index": 0,
+        "group_id": "c849fbcef8d18f4915f88c8228172ec7",
+        "seed": 4306083777406226642,
+        "split": "test"
+      },
+      {
+        "family_index": 1,
+        "group_id": "b082ffc892bea5e6a7880d3d64eaf3f3",
+        "seed": 7644762715494451481,
+        "split": "test"
+      },
+      {
+        "family_index": 2,
+        "group_id": "e7f8ad9e7fc41020a77754d33ab94371",
+        "seed": 8112516260532132607,
+        "split": "test"
+      },
+      {
+        "family_index": 3,
+        "group_id": "e0841f792970b4497e1d63b6a27ddd79",
+        "seed": 1115136747160312094,
+        "split": "test"
+      },
+      {
+        "family_index": 4,
+        "group_id": "eb81ba7e8af2d2c406919a19f9a0524e",
+        "seed": 4690988912716463641,
+        "split": "test"
+      },
+      {
+        "family_index": 5,
+        "group_id": "5bd45ce3ad850fe4469a1dc0356149bd",
+        "seed": 1974074609011703943,
+        "split": "test"
+      },
+      {
+        "family_index": 0,
+        "group_id": "aba7563bd7b20ec7d2d9e4bb765a38e7",
+        "seed": 996121925910377284,
+        "split": "test"
+      },
+      {
+        "family_index": 1,
+        "group_id": "8cd4b48871f1f042b92c99bb749b4dcc",
+        "seed": 895429306822146362,
+        "split": "test"
+      },
+      {
+        "family_index": 2,
+        "group_id": "615e3036344ff6797af31da36b5cbe6a",
+        "seed": 9066925440845842339,
+        "split": "test"
+      },
+      {
+        "family_index": 3,
+        "group_id": "9b67ea6d5a35040134025f883172a6f6",
+        "seed": 800238805732295501,
+        "split": "test"
+      },
+      {
+        "family_index": 4,
+        "group_id": "f1e9132ddb2e2564f5b27f87c536d2d0",
+        "seed": 5298068971650772996,
+        "split": "test"
+      },
+      {
+        "family_index": 5,
+        "group_id": "9a2a3c601767ff0b4bf1ef3714203ee4",
+        "seed": 8311851947751616628,
+        "split": "test"
+      },
+      {
+        "family_index": 0,
+        "group_id": "bb4368a689b351d5dbe47078ae32beab",
+        "seed": 1569069088626493688,
+        "split": "test"
+      },
+      {
+        "family_index": 1,
+        "group_id": "322634c391ea369f3da14b8ad102f92e",
+        "seed": 6409855843857075347,
+        "split": "test"
+      },
+      {
+        "family_index": 2,
+        "group_id": "9447101cb2b51c280929186b8e2c87f2",
+        "seed": 865771387359627366,
+        "split": "test"
+      },
+      {
+        "family_index": 3,
+        "group_id": "0fd80d3033b682fa2def65461400bc7e",
+        "seed": 5170233171617559283,
+        "split": "test"
+      },
+      {
+        "family_index": 4,
+        "group_id": "34c2859892f2dd54213de14272fc6f8e",
+        "seed": 5594186735702469367,
+        "split": "test"
+      },
+      {
+        "family_index": 5,
+        "group_id": "d54835e63f4f402a11544a1f8c359b88",
+        "seed": 8655891344091238172,
+        "split": "test"
+      },
+      {
+        "family_index": 0,
+        "group_id": "00e00d2d0fe266ba43d6de16a0c2ad55",
+        "seed": 4574725747719862702,
+        "split": "test"
+      },
+      {
+        "family_index": 1,
+        "group_id": "9a8ad44af70e568ea422944161ac30aa",
+        "seed": 6978620757274180448,
+        "split": "test"
+      },
+      {
+        "family_index": 2,
+        "group_id": "d38335bf6589ae5b81568b8b03f8d746",
+        "seed": 1393263183636060243,
+        "split": "test"
+      },
+      {
+        "family_index": 3,
+        "group_id": "52413eac4c57f8cfb3caab4c7463f627",
+        "seed": 7118321221124693729,
+        "split": "test"
+      },
+      {
+        "family_index": 4,
+        "group_id": "3b0050824cdde01e016489fd7e9a4c99",
+        "seed": 8856977193915924622,
+        "split": "test"
+      },
+      {
+        "family_index": 5,
+        "group_id": "71515c94ce5080c421b6d0d4edbbaf16",
+        "seed": 7928937458780613706,
+        "split": "test"
+      },
+      {
+        "family_index": 0,
+        "group_id": "51b9f3e978c1524983baa53dcdf3ddf0",
+        "seed": 2687008286923321887,
+        "split": "test"
+      },
+      {
+        "family_index": 1,
+        "group_id": "a60cc62cc7d6296adaf67f016bb1f400",
+        "seed": 7925696627082491318,
+        "split": "test"
+      },
+      {
+        "family_index": 2,
+        "group_id": "ea13349b9528966397dff86e3dd0fa1d",
+        "seed": 9221098472596004953,
+        "split": "test"
+      },
+      {
+        "family_index": 3,
+        "group_id": "d07c3a64e8802fbf5a3939ce9ab28d89",
+        "seed": 7291466436393603150,
+        "split": "test"
+      },
+      {
+        "family_index": 4,
+        "group_id": "c6723799100b425523c8ef1f3438635c",
+        "seed": 6173615079226514924,
+        "split": "test"
+      },
+      {
+        "family_index": 5,
+        "group_id": "118fcd139eaa99ad4f4d0a491fee4ef1",
+        "seed": 4526784111971898687,
+        "split": "test"
+      },
+      {
+        "family_index": 0,
+        "group_id": "d97032421add0ff4e1c5bf23857243b0",
+        "seed": 7409544228808443649,
+        "split": "test"
+      },
+      {
+        "family_index": 1,
+        "group_id": "4b46ccf0ffd446de08909b0f653f80d5",
+        "seed": 3708714906614849928,
+        "split": "test"
+      },
+      {
+        "family_index": 2,
+        "group_id": "3f3fc6d9d2470690ea2321444c149e7d",
+        "seed": 5554926049967159226,
+        "split": "test"
+      },
+      {
+        "family_index": 3,
+        "group_id": "c92d5cbcbeb72fdf87d671eeed0afa41",
+        "seed": 992710800863846427,
+        "split": "test"
+      },
+      {
+        "family_index": 4,
+        "group_id": "9c5fa69ca20e4968e18cb21575b4cd06",
+        "seed": 6254966675414271562,
+        "split": "test"
+      },
+      {
+        "family_index": 5,
+        "group_id": "7e3fd1cfe75880e7d789aad7da856ba6",
+        "seed": 336469344207000760,
+        "split": "test"
+      },
+      {
+        "family_index": 0,
+        "group_id": "d788c80e779bf72137f0e25a5cebec8e",
+        "seed": 2719148211116648752,
+        "split": "test"
+      },
+      {
+        "family_index": 1,
+        "group_id": "845715b7c657fa1293dc6ecbbedc64cc",
+        "seed": 8672060470851646165,
+        "split": "test"
+      },
+      {
+        "family_index": 2,
+        "group_id": "90c4ed683b5639efe6155011d9c4dfff",
+        "seed": 2947068119631003540,
+        "split": "test"
+      },
+      {
+        "family_index": 3,
+        "group_id": "796cced66d92afdc5496656c36065478",
+        "seed": 1683970461276185970,
+        "split": "test"
+      },
+      {
+        "family_index": 4,
+        "group_id": "9ca00c9f519de77674484d3e37662189",
+        "seed": 8303432424651327083,
+        "split": "test"
+      },
+      {
+        "family_index": 5,
+        "group_id": "20cb94c676c82a5aa02129a2f11c7c2a",
+        "seed": 6784452489466333431,
+        "split": "test"
+      }
+    ],
+    "modes": [
+      "local_geometry",
+      "topology_only",
+      "topology_evidence"
+    ],
+    "policy": {
+      "alternative_connection_radius_m": 0.12,
+      "duplicate_candidate_radius_m": 0.25,
+      "maximum_connection_gap_m": 0.08,
+      "maximum_duplicate_distance_m": 0.06,
+      "minimum_alternative_improvement_m": 0.2,
+      "minimum_bridge_support": 0.7,
+      "minimum_direction_cosine": 0.98,
+      "minimum_duplicate_coverage": 0.8,
+      "minimum_duplicate_length_m": 2.0,
+      "minimum_neighborhood_support": 0.6,
+      "neighborhood_length_m": 2.0,
+      "observation_support_radius_m": 0.12
+    },
+    "protocol_id": "p2-4610c090b5626e1eee118ad5",
+    "schema_version": "railway.synthetic-track-study-protocol.v1",
+    "seed": 20260906
+  },
+  "base_protocol_sha256": "fdba079b1cf889552e0d75b77d7d8a7e8f62951903da2b9128c8194f12662913",
+  "evaluation": {
+    "abstention_rule": "unassigned_causes_are_missed_diagnoses_not_correct_gaps",
+    "analysis_unit": "base_layout_group",
+    "condition_pairing": "all_conditions_stay_with_their_base_layout",
+    "detection_comparison": "identical_shared_geometry_alarms_not_an_improvement_claim",
+    "partial_test_allowed": false,
+    "primary_endpoint": "diagnosis_recall_including_abstentions",
+    "test_requires_verified_freeze": true
+  },
+  "modes": [
+    "local_geometry",
+    "topology_only",
+    "topology_evidence",
+    "adaptive_evidence"
+  ],
+  "policy": {
+    "alternative_connection_radius_m": 0.12,
+    "duplicate_candidate_radius_m": 0.25,
+    "maximum_connection_gap_m": 0.08,
+    "maximum_duplicate_distance_m": 0.06,
+    "minimum_alternative_improvement_m": 0.2,
+    "minimum_bridge_support": 0.7,
+    "minimum_direction_cosine": 0.98,
+    "minimum_duplicate_coverage": 0.8,
+    "minimum_duplicate_length_m": 2.0,
+    "minimum_neighborhood_support": 0.6,
+    "neighborhood_length_m": 2.0,
+    "observation_support_radius_m": 0.12
+  },
+  "protocol_id": "p2-adaptive-6a7f1c88d56893f3a8aeefe2",
+  "schema_version": "railway.synthetic-track-adaptive-protocol.v1"
+}

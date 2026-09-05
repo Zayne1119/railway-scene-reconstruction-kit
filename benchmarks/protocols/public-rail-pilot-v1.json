@@ -1,0 +1,154 @@
+{
+  "absolute_accuracy_available": false,
+  "candidate_input": [
+    "xyz"
+  ],
+  "comparison_unit": "one_parent_cloud_not_independent_points",
+  "connection_truth_available": false,
+  "dataset": {
+    "attribution": "Ghasemlou, Soilan, Martinez-Sanchez, Arias, Lorenzo and Riveiro (2025)",
+    "documentation_commit": "ff7d48c7518646f5093b1de57ce89f8969f9d25b",
+    "doi": "10.5281/zenodo.15641832",
+    "license_id": "cc-by-4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "name": "SemanticRail3D-V2",
+    "processing": "XYZ-only geometric candidate extraction; numeric semantic reference evaluation",
+    "source_url": "https://zenodo.org/records/15641832"
+  },
+  "maximum_display_points": 100000,
+  "maximum_points": 2000000,
+  "metadata_sha256": {
+    "removed_clouds.txt": "7aa4cc14fa941ff964112db4c8176331aac9aed0033c76a0d5fdf3e38fbd7975",
+    "test_clouds.txt": "0e9910e18e649b13fbb13e4dfded4dec9ec163158fbdf07e58a9863677dd84b6",
+    "train_clouds.txt": "b43bf0ba8826364de60ac3658338b6be94e5242c9c6c52de9230b12d4ae7826c",
+    "upstream_README.md": "a5dd3032269fc15ea46dae46e8f0f746aeec48780be9d44e1404e21c8408804d",
+    "val_clouds.txt": "c9e532f9836629a857836eb881c609d92f0f7d1ca75e379e3d0879ae04c1e1e6",
+    "zenodo_15641832.json": "b321fd4d035a8819ceba95a1bca88e1bbdd75a654a5e4cd111d7150e0e08dd59"
+  },
+  "modes": [
+    "height_prominence",
+    "paired_geometry"
+  ],
+  "policy": {
+    "candidate_half_width_m": 0.1,
+    "candidate_vertical_above_rail_m": 0.05,
+    "candidate_vertical_below_rail_m": 0.12,
+    "cross_bin_m": 0.05,
+    "gaussian_sigma_bins": 1.0,
+    "height_baseline_filter_bins": 11,
+    "longitudinal_bin_m": 0.25,
+    "maximum_candidate_count": 64,
+    "maximum_coordinate_extent_m": 1000000.0,
+    "maximum_cross_fit_residual_p90_m": 0.1,
+    "maximum_grid_cells": 4000000,
+    "maximum_pair_asymmetric_support_ratio": 0.25,
+    "maximum_pair_internal_gap_m": 5.0,
+    "maximum_point_count": 2000000,
+    "maximum_rail_top_crosslevel_m": 0.2,
+    "maximum_track_count": 8,
+    "minimum_direction_eigenvalue_ratio": 2.0,
+    "minimum_height_prominence_m": 0.07,
+    "minimum_line_coverage": 0.12,
+    "minimum_line_sample_count": 4,
+    "minimum_longitudinal_extent_m": 2.0,
+    "minimum_pair_joint_coverage": 0.1,
+    "minimum_peak_prominence": 0.02,
+    "minimum_peak_spacing_m": 0.35,
+    "minimum_search_point_count": 50,
+    "minimum_track_center_spacing_m": 3.0,
+    "pair_support_longitudinal_bin_m": 0.25,
+    "rail_pair_maximum_m": 1.65,
+    "rail_pair_minimum_m": 1.35,
+    "row_baseline_quantile": 0.2,
+    "z_max_offset_m": 0.5,
+    "z_min_offset_m": 0.0,
+    "z_percentile_max": 35.0,
+    "z_percentile_min": 1.0
+  },
+  "protocol_id": "public-rail-pilot-2d3b1e781cd344c204a8f7cb",
+  "reference_contract": {
+    "dataset": "SemanticRail3D-V2",
+    "dataset_doi": "10.5281/zenodo.15641832",
+    "ignore_policy": "report_both_all_points_and_annotated_only_not_official_rule",
+    "ignored_class_ids": [
+      0
+    ],
+    "reference_role": "released_pointwise_semantic_labels_not_independent_survey_truth",
+    "schema_version": "railway.public-rail-reference-contract.v1",
+    "source_facts": {
+      "artifact_disclosure": "This file is our concise factual review, not an upstream mapping manifest. Its hash binds what was checked and the unresolved conclusion; it does not create missing authority.",
+      "checked_on": "2026-09-05",
+      "dataset_doi": "10.5281/zenodo.15641832",
+      "facts": {
+        "class_zero": "The paper explicitly identifies class 0 as intentionally unclassified background.",
+        "evaluation_policy": "This project reports both full-cloud numeric-label agreement and an explicitly class-0-excluded view. The exclusion is a disclosed local diagnostic policy, not a verified official scoring rule.",
+        "rail_definition": "The paper describes the Rail category as running rail head and web.",
+        "rail_numeric_id": "No explicit rail numeric ID was found in the checked primary sources. A position in an ordered list or chart is not accepted as an ID mapping.",
+        "reference_boundary": "Released semantic labels support label-agreement checks, not independent geometry, physical completeness, connection correctness or measurement accuracy."
+      },
+      "paper_doi": "10.1038/s41597-025-06392-9",
+      "schema_version": "railway.public-rail-reference-source-facts.v1",
+      "scope": "public_document_contract_check_no_customer_data_no_test_clouds",
+      "sources": [
+        {
+          "locators": [
+            "Introducing labels: Unclassified and Rail definitions",
+            "Data Records / SemanticRail3D-V2: Classification integer range 0-11",
+            "Technical Validation / instance-label coverage: explicit class 0 background"
+          ],
+          "supports": "class 0 semantics and named rail category; not an explicit numeric rail mapping",
+          "url": "https://www.nature.com/articles/s41597-025-06392-9"
+        },
+        {
+          "bytes_read": 155005,
+          "supports": "named category counts only; no numeric class-ID row",
+          "url": "https://www.nature.com/articles/s41597-025-06392-9/tables/3"
+        },
+        {
+          "bytes": 9458,
+          "commit": "ff7d48c7518646f5093b1de57ce89f8969f9d25b",
+          "sha256": "a5dd3032269fc15ea46dae46e8f0f746aeec48780be9d44e1404e21c8408804d",
+          "supports": "V2 record identity; label-range text conflicts across sections and no explicit mapping",
+          "url": "https://raw.githubusercontent.com/Arshia-Gha/SemanticRail3D_Dataset/ff7d48c7518646f5093b1de57ce89f8969f9d25b/README.md"
+        },
+        {
+          "bytes": 179880,
+          "commit": "ff7d48c7518646f5093b1de57ce89f8969f9d25b",
+          "git_blob_sha1": "29b6f3295ffc73cb8b4cd5c0ffd4dcb8c56c0440",
+          "sha256": "74f379f4a9929ce116fef392cc8cb17459caa9e2a57ba462d4aafd271f36870c",
+          "supports": "visually inspected named class-count chart; no printed numeric class IDs",
+          "url": "https://raw.githubusercontent.com/Arshia-Gha/SemanticRail3D_Dataset/ff7d48c7518646f5093b1de57ce89f8969f9d25b/Data_Info/class_distribution_log_labeled.png"
+        },
+        {
+          "bytes": 260397,
+          "commit": "8f779128d3c082b3e0b800129bb0c2deddd90da2",
+          "sha256": "0b90dc0519ce1c0bf6300b1621807957f55d803fa9072422e45b2e2995a5743a",
+          "supports": "same author's related image evaluation describes colors but provides no numeric rail mapping; not a V2 annotation authority",
+          "url": "https://raw.githubusercontent.com/Arshia-Gha/LLM-for-Point-Cloud-Labeling-Evaluations/8f779128d3c082b3e0b800129bb0c2deddd90da2/llm-for-point-cloud-labeling-evaluations.ipynb"
+        }
+      ]
+    },
+    "source_facts_resource": "public-rail-reference-facts-v1.json",
+    "source_facts_sha256": "32676d9adb3ad0c43750438319d375e5b4c73147cf924817909c3c39bfdd0254",
+    "source_url": "https://www.nature.com/articles/s41597-025-06392-9",
+    "target_class_ids": [
+      1
+    ],
+    "target_name": "numeric_class_1",
+    "target_semantic_mapping_status": "rail_numeric_id_not_explicitly_verified",
+    "zero_semantics": "intentionally_unclassified_background",
+    "zero_semantics_status": "explicitly_stated_in_dataset_paper"
+  },
+  "reference_use": "evaluation_only_after_both_predictions_are_saved_and_locked",
+  "role": "single_public_training_sample_exploratory_not_held_out_test",
+  "sample": {
+    "filename": "cloud180_Seg1.laz",
+    "parent_cloud": "cloud180",
+    "point_count": 907816,
+    "segment": 1,
+    "selection": "first_complete_member_of_bounded_train_archive_prefix_not_random_sampling",
+    "sha256": "b81701df0f2f07dff14fe956f4b507c9ea719f416d99550da8e550b41ef36367",
+    "split": "train"
+  },
+  "schema_version": "railway.public-rail-pilot-protocol.v1"
+}

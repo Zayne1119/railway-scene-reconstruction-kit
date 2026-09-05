@@ -4,6 +4,18 @@
 
 # Railway Scene Reconstruction Kit
 
+## 新同事从这里开始
+
+在工具包根目录运行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Railway.ps1 demo
+```
+
+Windows 一条入口完成环境安装、锁定依赖、自动体检、合成出模和本机网页启动；基础演示不需要 Blender 或客户数据。
+详见 [安装与新人交接](docs/NEWCOMER_HANDOFF_CN.md)、[给接手 AI 的指令](docs/AI_HANDOFF_CN.md) 和 [交接验证记录](docs/HANDOFF_VERIFICATION_CN.md)。
+**演示可出模 ≠ 任意真实站场已实现全自动精细建模。** 真实项目使用同一工具链继续配置、生成候选和微调，不要求新人逐项签核旧版多人检查表。
+
 > 从铁路点式几何观测与全景影像，生成证据可追踪、资产可查询、可交付至 Web / Blender / UE 的结构化 CIM 场景。  
 > *An evidence-aware pipeline for traceable railway scene reconstruction.*
 
@@ -31,6 +43,15 @@
 
 ## Paper Benchmark
 
+最新研究进展：已完成保留合成测试的 60 个布局、720 个病例及六组对照，
+以及四个公开 TRAIN 父块的三组拟合中心间距对照。防护观测与方向几何
+均为 420/420，主差值为 0，不能宣称额外观测收益或现场满分；公开数字类
+映射未核实，两个父块仍零命中。旧版本、空结果和挑战失败全部保留。
+
+新增 [固定布局配对统计](docs/P2_FORMAL_ANALYSIS_CN.md)、
+`run_public_rail_spacing_study.py`、内部白名单源快照和复现比对入口。
+生产默认门禁不变，不新增逐图人工签核，当前 LICENSE 不代表已开源。
+
 论文实验与生产交付 QA 已分离。仓库提供冻结数据与空间切分、独立真值、受控消融、失败案例、人工复核计时和 Run Manifest v2 的模板与校验命令。
 
 ```powershell
@@ -39,6 +60,16 @@ railway-recon benchmark-freeze --root benchmarks/local/site-a
 ```
 
 详见 [论文 Benchmark v1 操作手册](docs/PAPER_BENCHMARK_CN.md)。真实 Benchmark 默认保存在已忽略的 `benchmarks/local/`，不得把客户数据或精确坐标提交到公开仓库。
+
+新增 [P1 独立合成轨道实验](docs/P1_SYNTHETIC_TRACK_PILOT_CN.md)：一条命令生成 24 个不读取客户数据的中心线开发案例，自动检测、评价并绘制定位图。它区分错误发现与原因判断，尚不代表真实点云精度、独立泛化或人工节时结果。
+
+后续 [P2 三组归因实验与协议冻结](docs/P2_TRACK_DIAGNOSIS_STUDY_CN.md) 增加仅拓扑对照、12 种条件、显式归因拒判、按基础布局隔离的开发/验证/测试，以及冻结前禁止运行测试的入口；另提供 [公开 LAS/LAZ 字段适配](docs/PUBLIC_LAS_INTAKE_CN.md)。这些研究功能不改变生产模型门禁或要求额外人工签核。
+
+新增 [P2 v3 方向基线与有限污染防护](docs/P2_GUARDED_DIAGNOSIS_CN.md)：保留旧四策略，自动执行六组对照，分别记录旧压力样例和新增曲线/平滑错接反例。方向矛盾防护改善了特定开发失败，但平滑假支撑仍可误导方法；不宣称全面优于几何/拓扑基线或已获得现场精度证据。
+
+新增 [公开 train 点云候选试跑](docs/PUBLIC_RAIL_PILOT_CN.md)：固定公开成员与元数据哈希，使用纯 XYZ 做局部候选/配对两组对照，预测锁定后输出双口径数字标签诊断、完整错误索引和三面板图。配对为空及数字类到 Rail 名称未核实的问题如实保留；没有使用客户数据或创建人工审核任务。
+
+[P2 v2 自适应降级](docs/P2_ADAPTIVE_DIAGNOSIS_CN.md) 保留旧三组并新增低观测下的几何推断与定性来源标记，复用原数据和阈值；额外的观测污染/遮挡压力探针保留失败结果。推断不冒充观测验证，开发高分不冒充正式测试或现场精度。
 
 ## 第二项目回写的跨段复用能力
 

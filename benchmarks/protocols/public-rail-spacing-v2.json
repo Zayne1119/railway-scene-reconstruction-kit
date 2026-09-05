@@ -1,0 +1,287 @@
+{
+  "schema_version": "railway.public-rail-spacing-protocol.v1",
+  "dataset": {
+    "name": "SemanticRail3D-V2",
+    "doi": "10.5281/zenodo.15641832",
+    "source_url": "https://zenodo.org/records/15641832",
+    "documentation_commit": "ff7d48c7518646f5093b1de57ce89f8969f9d25b",
+    "license_id": "cc-by-4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "attribution": "Ghasemlou, Soilan, Martinez-Sanchez, Arias, Lorenzo and Riveiro (2025)",
+    "processing": "XYZ-only geometric candidate extraction; numeric semantic reference evaluation"
+  },
+  "samples": [
+    {
+      "filename": "cloud180_Seg1.laz",
+      "sha256": "b81701df0f2f07dff14fe956f4b507c9ea719f416d99550da8e550b41ef36367",
+      "point_count": 907816,
+      "parent_cloud": "cloud180",
+      "segment": 1,
+      "split": "train",
+      "selection": "first_complete_member_of_bounded_train_archive_prefix_not_random_sampling",
+      "acquisition_receipt": {
+        "filename": "range_sample_receipt_v4.json",
+        "sha256": "5ebf0484563a9051e2072bacd9bdbcc1d25082c631308da60c5d35e1de9e2349"
+      }
+    },
+    {
+      "filename": "cloud000_Seg1.laz",
+      "sha256": "5e9b37f98fa9601d36b25527a20745b0008f2fe3d187b8a527153fb418bf748f",
+      "point_count": 774995,
+      "parent_cloud": "cloud000",
+      "segment": 1,
+      "split": "train",
+      "selection": "first_complete_retained_train_member_of_explicit_outer_archive_prefix_not_random_sampling",
+      "acquisition_receipt": {
+        "filename": "additional_train_part_1_v2_receipt.json",
+        "sha256": "756ba525e1a8f96516340b4db83b02d8dc8161027375f6453346235efdd27333"
+      }
+    },
+    {
+      "filename": "cloud061_Seg1.laz",
+      "sha256": "ca925bfcfafc7f80bfaa894c93defe554b5782f94c2e785a1550a0942fba81a4",
+      "point_count": 828122,
+      "parent_cloud": "cloud061",
+      "segment": 1,
+      "split": "train",
+      "selection": "first_complete_retained_train_member_of_explicit_outer_archive_prefix_not_random_sampling",
+      "acquisition_receipt": {
+        "filename": "additional_train_part_2_v1_receipt.json",
+        "sha256": "31ce011ea85516e57e9b4c397207a1c1536696c3ca55432f3f087bb50e2f2051"
+      }
+    },
+    {
+      "filename": "cloud120_Seg1.laz",
+      "sha256": "f3c914680322b3afa5f7da54cc8d3b7cf1f8eecc9960455ec0a5ffb5e99f9a70",
+      "point_count": 703698,
+      "parent_cloud": "cloud120",
+      "segment": 1,
+      "split": "train",
+      "selection": "first_complete_retained_train_member_of_explicit_outer_archive_prefix_not_random_sampling",
+      "acquisition_receipt": {
+        "filename": "additional_train_part_3_v1_receipt.json",
+        "sha256": "11550aeed674db8b409003b8127ce12c408b57eff19d1518d6c8854a41a0e75c"
+      }
+    }
+  ],
+  "metadata_sha256": {
+    "zenodo_15641832.json": "b321fd4d035a8819ceba95a1bca88e1bbdd75a654a5e4cd111d7150e0e08dd59",
+    "upstream_README.md": "a5dd3032269fc15ea46dae46e8f0f746aeec48780be9d44e1404e21c8408804d",
+    "train_clouds.txt": "b43bf0ba8826364de60ac3658338b6be94e5242c9c6c52de9230b12d4ae7826c",
+    "val_clouds.txt": "c9e532f9836629a857836eb881c609d92f0f7d1ca75e379e3d0879ae04c1e1e6",
+    "test_clouds.txt": "0e9910e18e649b13fbb13e4dfded4dec9ec163158fbdf07e58a9863677dd84b6",
+    "removed_clouds.txt": "7aa4cc14fa941ff964112db4c8176331aac9aed0033c76a0d5fdf3e38fbd7975"
+  },
+  "reference_contract": {
+    "schema_version": "railway.public-rail-reference-contract.v1",
+    "dataset": "SemanticRail3D-V2",
+    "dataset_doi": "10.5281/zenodo.15641832",
+    "target_class_ids": [
+      1
+    ],
+    "ignored_class_ids": [
+      0
+    ],
+    "target_name": "numeric_class_1",
+    "target_semantic_mapping_status": "rail_numeric_id_not_explicitly_verified",
+    "zero_semantics": "intentionally_unclassified_background",
+    "zero_semantics_status": "explicitly_stated_in_dataset_paper",
+    "ignore_policy": "report_both_all_points_and_annotated_only_not_official_rule",
+    "reference_role": "released_pointwise_semantic_labels_not_independent_survey_truth",
+    "source_url": "https://www.nature.com/articles/s41597-025-06392-9",
+    "source_facts_resource": "public-rail-reference-facts-v1.json",
+    "source_facts_sha256": "32676d9adb3ad0c43750438319d375e5b4c73147cf924817909c3c39bfdd0254",
+    "source_facts": {
+      "schema_version": "railway.public-rail-reference-source-facts.v1",
+      "checked_on": "2026-09-05",
+      "scope": "public_document_contract_check_no_customer_data_no_test_clouds",
+      "dataset_doi": "10.5281/zenodo.15641832",
+      "paper_doi": "10.1038/s41597-025-06392-9",
+      "facts": {
+        "class_zero": "The paper explicitly identifies class 0 as intentionally unclassified background.",
+        "rail_definition": "The paper describes the Rail category as running rail head and web.",
+        "rail_numeric_id": "No explicit rail numeric ID was found in the checked primary sources. A position in an ordered list or chart is not accepted as an ID mapping.",
+        "evaluation_policy": "This project reports both full-cloud numeric-label agreement and an explicitly class-0-excluded view. The exclusion is a disclosed local diagnostic policy, not a verified official scoring rule.",
+        "reference_boundary": "Released semantic labels support label-agreement checks, not independent geometry, physical completeness, connection correctness or measurement accuracy."
+      },
+      "sources": [
+        {
+          "url": "https://www.nature.com/articles/s41597-025-06392-9",
+          "locators": [
+            "Introducing labels: Unclassified and Rail definitions",
+            "Data Records / SemanticRail3D-V2: Classification integer range 0-11",
+            "Technical Validation / instance-label coverage: explicit class 0 background"
+          ],
+          "supports": "class 0 semantics and named rail category; not an explicit numeric rail mapping"
+        },
+        {
+          "url": "https://www.nature.com/articles/s41597-025-06392-9/tables/3",
+          "bytes_read": 155005,
+          "supports": "named category counts only; no numeric class-ID row"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/Arshia-Gha/SemanticRail3D_Dataset/ff7d48c7518646f5093b1de57ce89f8969f9d25b/README.md",
+          "commit": "ff7d48c7518646f5093b1de57ce89f8969f9d25b",
+          "bytes": 9458,
+          "sha256": "a5dd3032269fc15ea46dae46e8f0f746aeec48780be9d44e1404e21c8408804d",
+          "supports": "V2 record identity; label-range text conflicts across sections and no explicit mapping"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/Arshia-Gha/SemanticRail3D_Dataset/ff7d48c7518646f5093b1de57ce89f8969f9d25b/Data_Info/class_distribution_log_labeled.png",
+          "commit": "ff7d48c7518646f5093b1de57ce89f8969f9d25b",
+          "git_blob_sha1": "29b6f3295ffc73cb8b4cd5c0ffd4dcb8c56c0440",
+          "bytes": 179880,
+          "sha256": "74f379f4a9929ce116fef392cc8cb17459caa9e2a57ba462d4aafd271f36870c",
+          "supports": "visually inspected named class-count chart; no printed numeric class IDs"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/Arshia-Gha/LLM-for-Point-Cloud-Labeling-Evaluations/8f779128d3c082b3e0b800129bb0c2deddd90da2/llm-for-point-cloud-labeling-evaluations.ipynb",
+          "commit": "8f779128d3c082b3e0b800129bb0c2deddd90da2",
+          "bytes": 260397,
+          "sha256": "0b90dc0519ce1c0bf6300b1621807957f55d803fa9072422e45b2e2995a5743a",
+          "supports": "same author's related image evaluation describes colors but provides no numeric rail mapping; not a V2 annotation authority"
+        }
+      ],
+      "artifact_disclosure": "This file is our concise factual review, not an upstream mapping manifest. Its hash binds what was checked and the unresolved conclusion; it does not create missing authority."
+    }
+  },
+  "modes": [
+    "height_prominence",
+    "paired_default",
+    "paired_broad_spacing"
+  ],
+  "policies": {
+    "height_prominence": {
+      "z_percentile_min": 1.0,
+      "z_percentile_max": 35.0,
+      "z_min_offset_m": 0.0,
+      "z_max_offset_m": 0.5,
+      "cross_bin_m": 0.05,
+      "longitudinal_bin_m": 0.25,
+      "gaussian_sigma_bins": 1.0,
+      "height_baseline_filter_bins": 11,
+      "minimum_height_prominence_m": 0.07,
+      "minimum_line_coverage": 0.12,
+      "minimum_peak_prominence": 0.02,
+      "minimum_peak_spacing_m": 0.35,
+      "rail_pair_minimum_m": 1.35,
+      "rail_pair_maximum_m": 1.65,
+      "candidate_half_width_m": 0.1,
+      "candidate_vertical_below_rail_m": 0.12,
+      "candidate_vertical_above_rail_m": 0.05,
+      "maximum_rail_top_crosslevel_m": 0.2,
+      "pair_support_longitudinal_bin_m": 0.25,
+      "minimum_pair_joint_coverage": 0.1,
+      "maximum_pair_internal_gap_m": 5.0,
+      "maximum_pair_asymmetric_support_ratio": 0.25,
+      "minimum_track_center_spacing_m": 3.0,
+      "maximum_track_count": 8,
+      "row_baseline_quantile": 0.2,
+      "minimum_direction_eigenvalue_ratio": 2.0,
+      "minimum_longitudinal_extent_m": 2.0,
+      "minimum_search_point_count": 50,
+      "minimum_line_sample_count": 4,
+      "maximum_cross_fit_residual_p90_m": 0.1,
+      "maximum_point_count": 2000000,
+      "maximum_grid_cells": 4000000,
+      "maximum_candidate_count": 64,
+      "maximum_coordinate_extent_m": 1000000.0
+    },
+    "paired_default": {
+      "z_percentile_min": 1.0,
+      "z_percentile_max": 35.0,
+      "z_min_offset_m": 0.0,
+      "z_max_offset_m": 0.5,
+      "cross_bin_m": 0.05,
+      "longitudinal_bin_m": 0.25,
+      "gaussian_sigma_bins": 1.0,
+      "height_baseline_filter_bins": 11,
+      "minimum_height_prominence_m": 0.07,
+      "minimum_line_coverage": 0.12,
+      "minimum_peak_prominence": 0.02,
+      "minimum_peak_spacing_m": 0.35,
+      "rail_pair_minimum_m": 1.35,
+      "rail_pair_maximum_m": 1.65,
+      "candidate_half_width_m": 0.1,
+      "candidate_vertical_below_rail_m": 0.12,
+      "candidate_vertical_above_rail_m": 0.05,
+      "maximum_rail_top_crosslevel_m": 0.2,
+      "pair_support_longitudinal_bin_m": 0.25,
+      "minimum_pair_joint_coverage": 0.1,
+      "maximum_pair_internal_gap_m": 5.0,
+      "maximum_pair_asymmetric_support_ratio": 0.25,
+      "minimum_track_center_spacing_m": 3.0,
+      "maximum_track_count": 8,
+      "row_baseline_quantile": 0.2,
+      "minimum_direction_eigenvalue_ratio": 2.0,
+      "minimum_longitudinal_extent_m": 2.0,
+      "minimum_search_point_count": 50,
+      "minimum_line_sample_count": 4,
+      "maximum_cross_fit_residual_p90_m": 0.1,
+      "maximum_point_count": 2000000,
+      "maximum_grid_cells": 4000000,
+      "maximum_candidate_count": 64,
+      "maximum_coordinate_extent_m": 1000000.0
+    },
+    "paired_broad_spacing": {
+      "z_percentile_min": 1.0,
+      "z_percentile_max": 35.0,
+      "z_min_offset_m": 0.0,
+      "z_max_offset_m": 0.5,
+      "cross_bin_m": 0.05,
+      "longitudinal_bin_m": 0.25,
+      "gaussian_sigma_bins": 1.0,
+      "height_baseline_filter_bins": 11,
+      "minimum_height_prominence_m": 0.07,
+      "minimum_line_coverage": 0.12,
+      "minimum_peak_prominence": 0.02,
+      "minimum_peak_spacing_m": 0.35,
+      "rail_pair_minimum_m": 1.35,
+      "rail_pair_maximum_m": 1.9,
+      "candidate_half_width_m": 0.1,
+      "candidate_vertical_below_rail_m": 0.12,
+      "candidate_vertical_above_rail_m": 0.05,
+      "maximum_rail_top_crosslevel_m": 0.2,
+      "pair_support_longitudinal_bin_m": 0.25,
+      "minimum_pair_joint_coverage": 0.1,
+      "maximum_pair_internal_gap_m": 5.0,
+      "maximum_pair_asymmetric_support_ratio": 0.25,
+      "minimum_track_center_spacing_m": 3.0,
+      "maximum_track_count": 8,
+      "row_baseline_quantile": 0.2,
+      "minimum_direction_eigenvalue_ratio": 2.0,
+      "minimum_longitudinal_extent_m": 2.0,
+      "minimum_search_point_count": 50,
+      "minimum_line_sample_count": 4,
+      "maximum_cross_fit_residual_p90_m": 0.1,
+      "maximum_point_count": 2000000,
+      "maximum_grid_cells": 4000000,
+      "maximum_candidate_count": 64,
+      "maximum_coordinate_extent_m": 1000000.0
+    }
+  },
+  "extractor_modes": {
+    "height_prominence": "height_prominence",
+    "paired_default": "paired_geometry",
+    "paired_broad_spacing": "paired_geometry"
+  },
+  "role": "post_pilot_public_training_development_spacing_sensitivity_not_held_out",
+  "development_exposure": {
+    "original_pilot_already_viewed": true,
+    "motivation": "original_candidate_intervals_about_1_75_and_1_78_m_exceeded_1_65_m",
+    "broad_hypothesis": "fixed_fitted_center_spacing_1_35_to_1_90_m_not_physical_gauge",
+    "new_semantic_mapping_inferred": false,
+    "outcome_based_sample_or_mode_exclusion_allowed": false,
+    "threshold_tuning_within_run_allowed": false
+  },
+  "candidate_input": [
+    "xyz"
+  ],
+  "reference_use": "evaluation_only_after_all_samples_all_modes_saved_and_locked",
+  "comparison_unit": "parent_cloud_descriptive_not_independent_points",
+  "connection_truth_available": false,
+  "absolute_accuracy_available": false,
+  "maximum_points": 2000000,
+  "maximum_samples": 8,
+  "protocol_id": "public-rail-spacing-3587a4744133c9d8ecd43c6b"
+}

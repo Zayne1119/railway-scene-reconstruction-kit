@@ -1,0 +1,72 @@
+{
+  "contract": {
+    "abstention": "diagnosis_false_negative_not_removed_from_denominator",
+    "all_abstentions_reported": true,
+    "all_normal_false_alarms_reported": true,
+    "automatic_equivalence_claim": false,
+    "automatic_superiority_claim": false,
+    "bootstrap": {
+      "confidence_level": 0.95,
+      "interval": "percentile",
+      "quantile_method": "linear",
+      "resamples": 10000,
+      "rng": "numpy_PCG64",
+      "seed": 947320260909,
+      "stratification": "none_design_mixture_not_population_sampling",
+      "unit": "whole_layout_with_all_conditions_and_modes_paired"
+    },
+    "degenerate_interval": "observed_invariance_not_population_certainty_or_equivalence",
+    "endpoint": "mean_layout_correct_diagnosis_rate_over_truth_faults",
+    "external_baseline_status": "six_internal_control_policies_not_external_SOTA",
+    "fault_denominator": "all_truth_faults_in_all_variants_within_each_layout",
+    "modes": [
+      "local_geometry",
+      "topology_only",
+      "topology_evidence",
+      "adaptive_evidence",
+      "direction_geometry",
+      "guarded_evidence"
+    ],
+    "p_values": false,
+    "primary": {
+      "comparison": "direction_geometry",
+      "method": "guarded_evidence"
+    },
+    "scope": "synthetic_centerline_and_observation_proxies_not_field_or_LiDAR_accuracy",
+    "secondary": "guarded_minus_each_other_mode_exploratory_no_multiplicity_claim",
+    "weighting": "equal_layout_weights_not_independent_variant_weights"
+  },
+  "created_at_utc": "2026-09-05T07:10:55.702538+00:00",
+  "guarded_protocol_id": "p2-guarded-v3-36abe5a9ac976b03b73152b0",
+  "guarded_protocol_sha256": "708a69727921f8bf653c5979ff546822b5c615b095fee2563f33e7e13a0342f6",
+  "prior_data_access": {
+    "challenge_stress_observed": true,
+    "creation_does_not_verify_historical_test_non_access": true,
+    "development_v1_v2_v3_observed": true,
+    "legacy_stress_observed": true,
+    "public_training_pilot_observed": true,
+    "reserved_test_generated_for_plan_creation": false,
+    "validation_v1_v2_v3_observed": true
+  },
+  "registration": "local_timestamp_and_hash_binding_not_external_preregistration",
+  "schema_version": "railway.synthetic-track-formal-analysis-plan.v1",
+  "source_sha256": {
+    "pyproject.toml": "a8290a2e49f3734a6af1f054d9002072e948928782c124da5e728a76cf355c21",
+    "scripts/analyze_synthetic_track_formal.py": "e56c5213fe373fb16ab641a8d992a7e2f6db7574632fe56450a2c810354d138e",
+    "src/railway_recon/synthetic_track_adaptive_audit.py": "f24cad94879088ad4eed88f61fb51d934113ce02e1b52ea628f4a00b878de78f",
+    "src/railway_recon/synthetic_track_adaptive_protocol.py": "5d186a4b87bf38a8ffcf81e9c521c14a8edb524493d4db1e65bb1fe4a1f500a1",
+    "src/railway_recon/synthetic_track_adaptive_study.py": "bd06832cbff749ee49a83d05f85c39d4bf0b3f0a85a483513e80ce595896d2fd",
+    "src/railway_recon/synthetic_track_formal_analysis.py": "1c4a9d7e5f13bd7f6f86c544ad7458428c818b786d516c6cbbf6c198d2d4c50f",
+    "src/railway_recon/synthetic_track_guarded_audit.py": "3ae43f3a139256c45ac4e2e055a92e3458e2c865fb67c580e365af1bc953c702",
+    "src/railway_recon/synthetic_track_guarded_protocol.py": "becf73763b8b715d77aec4b8f5bbb0a66e9b6d9a23cec92da41be492bbdf3a64",
+    "src/railway_recon/synthetic_track_guarded_study.py": "3be5ad7740151fe6c01164be6b286697c96ce6dcd9306fa1ab66afe008b746c6",
+    "src/railway_recon/synthetic_track_pilot.py": "481da9e924aabfb129e72d295938af720cf3e9bbf303a7904c03551614323d25",
+    "src/railway_recon/synthetic_track_scene.py": "3d564f6bf8df32edc43b349053b6ba825faccd0a78f88874e20a60b7ab891719",
+    "src/railway_recon/synthetic_track_study.py": "13939b9142f6868c5abf5c5b6df9f5ff36df8faca368fa8911fdb4287206f795",
+    "src/railway_recon/synthetic_track_study_audit.py": "c0f7875d7bfe6fa8c5487043683a4316cbb12876fdca892b9c0e284ad1b688f8",
+    "src/railway_recon/synthetic_track_study_protocol.py": "1416b0e52bf6161758f46ab1e5e6f7f382df479a66775921bcc0348c83cb7811",
+    "src/railway_recon/synthetic_track_study_scene.py": "862f0c14dbbe08dc61137bfeca1052193c83da83e80efb26e1f50a818823ff36",
+    "uv.lock": "f3bb403bb486f179557e1fd33234c784b8d44bd5ba594b5ef72efdb9acb110e8"
+  },
+  "test_result_policy": "retain_first_complete_run_no_post_test_method_tuning"
+}

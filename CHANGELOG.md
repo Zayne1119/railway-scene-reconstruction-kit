@@ -2,6 +2,76 @@
 
 ## Unreleased
 
+- Pre-push validation: 765 Python tests passed (one Windows symlink-permission
+  skip), all 18 viewer tests and the web build passed. Keep TOML and lock files
+  LF-normalized so Windows clones preserve frozen protocol source hashes.
+
+- Added a Windows newcomer launcher for project-local setup, locked dependency
+  installation, read-only environment diagnosis, synthetic model generation,
+  localhost viewing, project scaffolding and regression checks.
+- Added a persistent, independently synthetic LAZ-to-GLB onboarding demo with
+  named assets, authored station structures, integrity-checked reuse and no
+  customer input. This is not a claim of automatic real-station reconstruction.
+- Made the viewer portable and localhost-only by default, with an explicit
+  synthetic demo route, persistent errors, real model counts and a constrained
+  opt-in directory for external models. Existing production payloads are preserved.
+- Added Chinese installation/AI handoff instructions and exception-driven solo
+  operation guidance; the historical full signoff checklist is not a daily task queue.
+- Verified a source-only cold start (762 Python checks passed, two optional/OS
+  skips; 18 viewer checks and build passed), and official runtime download/install
+  branches. Fixed Windows native-argument quoting, exact checksum matching and
+  long ZIP paths; preserved the lack of browser visual verification explicitly.
+
+- Completed the first retained 60-layout / 720-case synthetic test without
+  post-test method changes; all six controls and failure cases are retained.
+  Guarded evidence ties direction geometry (420/420): no added observation
+  benefit or field-accuracy claim. Added fixed whole-layout paired bootstrap,
+  full dependency bindings, artifact verification and prediction re-scoring.
+- Added an explicitly post-pilot TRAIN spacing study on four public parent
+  clouds (3,214,631 points). Broad fitted-center spacing restores some pairs,
+  but two parents still miss every numeric target point. Unverified semantics,
+  unclassified background and all empty results remain explicit.
+- Added internal source-only reproduction snapshots, preserved-license and
+  known-pattern disclosure checks, plus automated cross-environment output
+  comparison. No customer data, public release or manual signoff queue added.
+
+- Added a hash-pinned public TRAIN-point-cloud pilot with XYZ-only local and
+  paired candidate extraction, separate labels, pre-evaluation prediction locks,
+  full-point numeric-label diagnostics, error indices and comparison figures.
+- Preserved the empty paired result under transferred spacing assumptions and
+  the unresolved numeric-to-Rail class mapping. Unclassified background is
+  reported under both scoring views, not presented as confirmed non-rail truth.
+
+- Added a v3 direction-geometry baseline and bounded direction-inconsistency
+  guard for supported false bridges, retaining all four earlier audit policies.
+- Added six-way replay, immutable source/protocol bindings, separated legacy and
+  analytic challenge suites, complete failure/route reporting and six-panel figures.
+  Smooth false bridges remain failures; overall superiority is not established.
+
+- Added an adaptive diagnosis policy that retains explicitly unverified topology
+  inference under missing current/alternative observations while preserving
+  genuine evidence conflicts, unchanged geometric alarms and the v1 controls.
+- Added four-way v2 replay with unchanged v1 seeds/thresholds, additive decision
+  provenance metrics, qualitative confidence consistency checks and a new freeze.
+- Added 18 separate adversarial development probes for absent observations,
+  alternative-context occlusion and misleading bridge clutter. Failures remain
+  visible; internal support is not presented as a correctness certificate.
+
+- Added a separate P2 three-way diagnosis study with topology-only ablation,
+  independent crossing/observation controls, explicit cause abstentions, grouped
+  development/validation/test registration and verified source/protocol freezing.
+  Shared geometric alarms are not presented as improved fault detection.
+- Added hash-pinned, offline LAS/LAZ field intake with complete chunked decoding,
+  explicit schema, real header/field checks and no inferred relationship truth.
+
+- Added an independent 24-case synthetic centerline development pilot, with
+  geometry-derived separation/overlap checks and evidence-supported connection
+  diagnosis. Inputs exclude truth labels, site templates and cached residuals.
+- Added one-command pilot execution, isolated truth/prediction files, one-to-one
+  detection versus diagnosis metrics, normal-check denominators, localization
+  figures, timing records and reproducible artifact/source hashes. This pilot
+  is not a held-out field benchmark or a human-effort reduction claim.
+
 - Added a two-tier candidate gate for solo, model-first iteration: broken,
   missing, mismatched or accidentally promoted artifacts remain hard blockers,
   while legacy metadata and review-process debt become a non-blocking warning

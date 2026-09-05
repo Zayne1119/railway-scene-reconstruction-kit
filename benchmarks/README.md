@@ -1,5 +1,23 @@
 # Paper Benchmark v1
 
+Current customer-independent study: the first 60 reserved synthetic layout
+groups have been executed with fixed v3 methods and a pre-execution analysis
+plan. Guarded evidence and direction geometry tie at 420/420 correct diagnoses.
+See [formal grouped analysis](../docs/P2_FORMAL_ANALYSIS_CN.md).
+Four public TRAIN parents also have a versioned spacing-sensitivity protocol;
+numeric labels remain semantically unverified and do not provide connection
+truth. These are controlled/internal comparisons, not an external SOTA result.
+
+For a customer-independent development smoke experiment, see
+[P1 synthetic track pilot](../docs/P1_SYNTHETIC_TRACK_PILOT_CN.md). It generates
+24 centerline cases and evaluates geometric detection separately from cause
+diagnosis. It does not replace the independent research protocol below.
+
+The [P2 three-way diagnosis study](../docs/P2_TRACK_DIAGNOSIS_STUDY_CN.md)
+adds grouped split declarations, difficult controls, abstention-aware cause
+evaluation and verified source/protocol binding before any test execution.
+Its shared geometric alarms must not be presented as a detection improvement.
+
 This directory contains the public, data-safe protocol and templates used to turn a
 production railway reconstruction into a reproducible research experiment.
 

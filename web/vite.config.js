@@ -1,13 +1,5 @@
 import { defineConfig } from "vite";
+import { fileURLToPath } from "node:url";
+import { viewerServerConfig } from "./server-config.js";
 
-export default defineConfig({
-  server: {
-    host: "0.0.0.0",
-    port: 3010,
-    fs: { allow: ["D:/Railway"] },
-  },
-  preview: {
-    host: "0.0.0.0",
-    port: 3010,
-  },
-});
+export default defineConfig(viewerServerConfig(fileURLToPath(new URL(".", import.meta.url))));
