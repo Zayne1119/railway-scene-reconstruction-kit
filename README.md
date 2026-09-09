@@ -4,7 +4,7 @@
 
 # Railway Scene Reconstruction Kit
 
-## 新同事从这里开始
+## 从这里开始
 
 在工具包根目录运行：
 
@@ -13,7 +13,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\Railway.ps1 demo
 ```
 
 Windows 一条入口完成环境安装、锁定依赖、自动体检、合成出模和本机网页启动；基础演示不需要 Blender 或客户数据。
-详见 [安装与新人交接](docs/NEWCOMER_HANDOFF_CN.md)、[给接手 AI 的指令](docs/AI_HANDOFF_CN.md) 和 [交接验证记录](docs/HANDOFF_VERIFICATION_CN.md)。
+详见 [安装与交接](docs/NEWCOMER_HANDOFF_CN.md)、[给接手 AI 的指令](docs/AI_HANDOFF_CN.md) 和 [交接验证记录](docs/HANDOFF_VERIFICATION_CN.md)。
 **演示可出模 ≠ 任意真实站场已实现全自动精细建模。** 真实项目使用同一工具链继续配置、生成候选和微调，不要求新人逐项签核旧版多人检查表。
 
 > 从铁路点式几何观测与全景影像，生成证据可追踪、资产可查询、可交付至 Web / Blender / UE 的结构化 CIM 场景。  
